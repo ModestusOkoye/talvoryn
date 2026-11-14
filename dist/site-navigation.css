@@ -45,3 +45,29 @@ header nav.talvoryn-nav .mobile-menu-toggle{display:none;border:1px solid #dae3e
 #railRefresh{display:inline-flex;align-items:center;justify-content:center;transform-origin:center;animation:talvoryn-refresh-idle 9s ease-in-out infinite;will-change:transform}
 #railRefresh:hover,#railRefresh:focus-visible{animation-duration:2s}
 @media(prefers-reduced-motion:reduce){#railRefresh{animation:none!important}}
+
+/* Mobile navigation correction: left-side drawer, clean white surface, subtle backdrop. */
+@media(max-width:950px){
+ body.mobile-navigation-open header{position:relative;z-index:210}
+ header nav.talvoryn-nav>.primary-links.is-open{
+  left:0!important;right:auto!important;top:0!important;bottom:0!important;
+  width:min(85vw,340px)!important;max-width:100%!important;
+  background:#fff!important;color:#102840!important;
+  box-shadow:12px 0 34px rgba(16,40,64,.13)!important;
+  z-index:212!important;
+ }
+ header nav.talvoryn-nav>.primary-links.is-open>a,
+ header nav.talvoryn-nav>.primary-links.is-open>.about-trigger{
+  color:#253c53!important;
+ }
+ header nav.talvoryn-nav>.primary-links.is-open>a[aria-current="page"]{
+  color:#fff!important;background:#102840!important;
+ }
+ .mobile-navigation-backdrop.is-open{
+  background:rgba(16,40,64,.18)!important;
+  z-index:205!important;
+ }
+ header nav.talvoryn-nav>.mobile-menu-toggle{
+  z-index:215!important;
+ }
+}
