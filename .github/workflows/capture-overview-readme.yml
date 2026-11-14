@@ -1,0 +1,25 @@
+name: Capture Talvoryn Overview for README
+on:
+  push:
+    paths:
+      - .github/workflows/capture-overview-readme.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Capture actual live page
+        run: |
+          mkdir -p docs/assets
+          google-chrome --headless --no-sandbox --disable-gpu --hide-scrollbars --window-size=1440,900 --virtual-time-budget=8000 --screenshot=docs/assets/talvoryn-overview.png https://talvoryn.pages.dev/performance.html
+          file docs/assets/talvoryn-overview.png
+          test -s docs/assets/talvoryn-overview.png
+      - name: Commit captured screenshot
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/assets/talvoryn-overview.png
+          git diff --cached --quiet || (git commit -m "Add real Talvoryn Overview screenshot" && git push)
