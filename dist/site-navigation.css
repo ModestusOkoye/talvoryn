@@ -1,0 +1,27 @@
+/* Talvoryn navigation: desktop links beside brand, actions on the right. */
+header nav.talvoryn-nav{display:flex;align-items:center;gap:18px;flex-wrap:nowrap;max-width:1600px;min-height:72px;height:auto;padding:10px 28px}
+header nav.talvoryn-nav .talvoryn-brand{flex:0 0 194px;width:194px;height:53px;margin:0}
+header nav.talvoryn-nav .primary-links{display:flex;align-items:center;gap:5px;min-width:0}
+header nav.talvoryn-nav .primary-links>a,header nav.talvoryn-nav .primary-links>.about-trigger{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 12px;border:1px solid transparent;border-radius:7px;background:transparent;white-space:nowrap;font-size:12px;font-weight:550;color:#526171;text-decoration:none}
+header nav.talvoryn-nav .primary-links>a[aria-current="page"]{background:#102840;color:white;border-color:#102840}
+header nav.talvoryn-nav .primary-links>a:hover:not([aria-current="page"]),header nav.talvoryn-nav .primary-links>.about-trigger:hover{background:#edf3fb;color:#102840}
+header nav.talvoryn-nav .header-coming-soon{display:flex;flex-wrap:nowrap;gap:7px;justify-content:flex-end;align-items:center;flex:0 0 auto;margin-left:auto}
+header nav.talvoryn-nav .header-coming-soon button{white-space:nowrap}
+header nav.talvoryn-nav .mobile-menu-toggle{display:none;border:1px solid #dae3ed;border-radius:8px;background:#fff;padding:7px 10px;font-size:13px;font-weight:650;color:#102840;align-items:center;gap:8px}
+.mobile-navigation-backdrop{display:none}
+@media(max-width:950px){
+ header nav.talvoryn-nav{padding:8px 16px;min-height:62px;gap:8px;flex-wrap:nowrap}
+ header nav.talvoryn-nav .talvoryn-brand{width:154px;height:43px;flex-basis:154px;margin-right:auto}
+ header nav.talvoryn-nav .talvoryn-brand svg{width:154px;height:43px}
+ header nav.talvoryn-nav .mobile-menu-toggle{display:inline-flex;margin-left:auto;position:relative;z-index:101}
+ header nav.talvoryn-nav .primary-links,header nav.talvoryn-nav .header-coming-soon{display:none}
+ header nav.talvoryn-nav .primary-links.is-open{display:flex;position:fixed;top:0;right:0;bottom:0;z-index:100;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:7px;width:min(85vw,340px);max-width:100%;margin:0;padding:78px 20px 24px;background:#fff;box-shadow:-12px 0 40px #10284026;overflow-y:auto}
+ header nav.talvoryn-nav .primary-links>a,header nav.talvoryn-nav .primary-links>.about-trigger{width:100%;height:44px;justify-content:flex-start;padding:0 14px;font-size:15px;flex:none}
+ header nav.talvoryn-nav .primary-links .drawer-actions{border-top:1px solid #e0e6ed;margin-top:15px;padding-top:18px;display:grid;gap:9px}
+ header nav.talvoryn-nav .primary-links .drawer-actions button{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:46px;padding:10px 12px;font-size:12px;text-align:left;background:#f7f9fb;border:1px solid #dce4ec;border-radius:7px;color:#526171;opacity:1}
+ header nav.talvoryn-nav .primary-links .drawer-actions small{font-size:10px;white-space:nowrap}
+ .mobile-navigation-backdrop.is-open{display:block;position:fixed;inset:0;background:#06162688;z-index:99}
+ body.mobile-navigation-open{overflow:hidden}
+}
+@media(min-width:951px){header nav.talvoryn-nav .drawer-actions{display:none}}
+@media(max-width:390px){header nav.talvoryn-nav .talvoryn-brand{width:130px;flex-basis:130px}header nav.talvoryn-nav .talvoryn-brand svg{width:130px}}
