@@ -1,0 +1,14 @@
+{
+  "name": "talvoryn",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Existing Talvoryn Site application source; historical datasets imported separately",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "python3 scripts/build_connected_site.py",
+    "dev": "python3 -m http.server 8080 --directory dist",
+    "test": "node --test tests/*.cjs tests/*.mjs"
+  }
+}

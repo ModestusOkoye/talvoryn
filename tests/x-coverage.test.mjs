@@ -1,0 +1,6 @@
+import assert from 'node:assert/strict';import {socialSignals,collectX} from '../worker/collectors.mjs';
+for(const text of ['A new wallet integration is live','Hackathon submissions close tomorrow','Our mainnet upgrade launches today','New payment partnership'])assert(socialSignals({text}).length,text);
+assert.equal(socialSignals({text:'Happy Friday everyone'}).length,0);assert(socialSignals({text:'Yes, after the vote',referenced_tweets:[{type:'replied_to',id:'1'}]}).length);
+let calls=0;globalThis.fetch=async(url,options)=>{calls++;assert(url.toString().includes('max_results=10'));return {ok:true,json:async()=>({data:[{id:'10',text:'Hackathon submissions open',created_at:'2026-11-13T00:00:00Z',author_id:'2'}],meta:{}})}};
+const state={};let result=await collectX(state,'test-only-token',true);assert.equal(calls,1);assert.equal(result.pending.length,1);assert(result.pending[0].evidence.eventCheck);assert.equal(state.xBudget.reservedReads,10);assert.equal(state.xRecentPosts.length,1);
+state.xBudget.reservedReads=50;result=await collectX(state,'test-only-token',true);assert.equal(calls,1);assert.match(result.status.error,/limit/);console.log('Broader relevance, reply context, roster checks, one-request collection and daily cap passed.');

@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import {exchangeTransfer,proveDexTransfer,knownExchangeAccount} from '../worker/exchange-flows.mjs';
+const n=10n**24n,row={account_id:'alice.near',other_account_id:'v2.ref-finance.near',asset_type:'Ft',transfer_type:'FtTransfer',asset_id:'nep141:wrap.near',amount:String(n),receipt_id:'receipt',transaction_id:'tx',transfer_index:1};
+const tx={status:{SuccessValue:''},transaction:{hash:'tx',signer_id:'alice.near'},receipts_outcome:[{id:'swap',outcome:{executor_id:'v2.ref-finance.near',status:{SuccessValue:''},logs:['Swapped 20 token.near for '+n+' wrap.near']}},{id:'receipt',outcome:{executor_id:'wrap.near',status:{SuccessValue:''},logs:['EVENT_JSON:'+JSON.stringify({standard:'nep141',event:'ft_transfer',data:[{old_owner_id:'v2.ref-finance.near',new_owner_id:'alice.near',amount:String(n)}]})]}}]};
+assert.equal(exchangeTransfer(row),null,'DEX transfer alone is not a trade');
+assert.equal(proveDexTransfer(row,tx).kind,'DEX buy');
+assert.equal(proveDexTransfer({...row,amount:String(2n*n)},tx),null,'receipt amount must match');
+assert.equal(proveDexTransfer(row,{...tx,status:{Failure:{}}}),null);
+assert.equal(proveDexTransfer(row,{...tx,transaction:{...tx.transaction,signer_id:'bob.near'}}),null,'another user swap must not qualify');
+const liquidity=structuredClone(tx);liquidity.receipts_outcome[0].outcome.logs=['Removed liquidity'];assert.equal(proveDexTransfer(row,liquidity),null);
+const spoof=structuredClone(tx);spoof.receipts_outcome[0].outcome.executor_id='fake-ref.near';assert.equal(proveDexTransfer(row,spoof),null);
+const missingReceipt=structuredClone(tx);missingReceipt.receipts_outcome.pop();assert.equal(proveDexTransfer(row,missingReceipt),null);
+assert.equal(exchangeTransfer({...row,other_account_id:'binance1.near',amount:String(n)}).kind,'CEX withdrawal');
+assert.equal(exchangeTransfer({...row,other_account_id:'binance1.near',amount:String(-n)}).kind,'CEX deposit');
+assert.equal(exchangeTransfer({...row,other_account_id:'ordinary.near'}),null);
+assert.equal(exchangeTransfer({...row,other_account_id:'10da3e6516672e0317d9c20e0bf89018271b18c5e3b01ac7b246b2417636a57b'}),null,'custodian is excluded');
+assert(knownExchangeAccount('3d9ccff55cef5a3efd1fe14b14509b726123910845243ef1671b45e46f214324'));
+console.log('Exchange address matching, custody exclusions, successful DEX receipt evidence and false-trade rejection passed.');
+
+assert.equal(exchangeTransfer({...row,asset_type:'Near',asset_id:'native:near',transfer_type:'AttachedDeposit',other_account_id:'binance1.near'}),null);assert.equal(exchangeTransfer({...row,transfer_type:'Refund',other_account_id:'binance1.near'}),null);

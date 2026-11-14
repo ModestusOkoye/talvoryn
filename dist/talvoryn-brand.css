@@ -1,0 +1,50 @@
+:root{--ink:#111f2d;--green:#164f91;--muted:#737b82;--line:#e0e4e8}
+header .talvoryn-brand{display:flex;align-items:center;position:relative;width:178px;height:48px;margin-right:auto;flex:0 0 178px}
+header .talvoryn-brand svg{display:block;width:178px;height:48px;overflow:hidden}
+header nav>a[aria-current=page]{background:#edf2f8;color:#102b46}
+.about-trigger{color:#526171}.about-trigger:hover{background:#edf2f8}
+a{color:#164f91}.activity-toolbar .metric-tabs button.on,.activity-toolbar .interval-tabs button.on,.choice-group .active,.choice-group [aria-pressed=true],.whale-periods button[aria-pressed=true]{background:#102840;color:white;border-color:#102840}
+button.on,.primary{background:#102840;border-color:#102840}.catalyst-pages button[aria-current=page]{background:#102840;border-color:#102840}.scenario-card:hover{border-color:#a4b5c8;box-shadow:0 10px 28px #10284010}footer a{color:#102840;border-color:#b0bdc9}footer a:hover{color:#1673cf;border-color:#1673cf}
+#whaleAccumulationSlot{background:#f7f9fb!important}#whaleAccumulationSlot h2,.rail-heading h2{color:#15283b}.about-actions a{color:#164f91}
+@media(max-width:760px){header .talvoryn-brand{width:120px;height:34px;flex-basis:120px}header .talvoryn-brand svg{width:120px;height:34px}header nav>a:not(.brand){padding:0 7px;font-size:10px}.about-trigger{font-size:10px;padding:7px}}
+/* Talvoryn identity: a quiet orbit, precise edges and navy-led hierarchy. */
+:root{--brand-navy:#102840;--brand-blue:#1673e8;--brand-soft:#edf3fb;--ink:#111c28;--line:#dfe5eb;--panel:white;--bg:#f4f6f8}
+body{background:var(--bg)}
+header{background:#fff;border-bottom:1px solid #d9e1ea;box-shadow:0 2px 10px #10284004}header nav{height:72px;max-width:1600px}
+header .talvoryn-brand{width:194px;height:53px;flex-basis:194px}header .talvoryn-brand svg{width:194px;height:53px;mix-blend-mode:multiply}
+header nav>a:not(.brand){border:1px solid transparent;border-radius:6px;padding:0 15px;height:35px;font-weight:550}header nav>a[aria-current=page]{background:#102840;color:#fff;border-color:#102840;box-shadow:inset 0 -2px 0 #1673e8}
+.about-trigger{height:35px;margin-left:5px;border-left:1px solid #e1e7ed;border-radius:0;padding-left:17px}
+h1{color:#102840;font-weight:650!important;letter-spacing:-1px}h2{color:#152a40}h3{color:#20384e}
+.heading{padding-bottom:12px;border-bottom:1px solid #dce4ec;margin-bottom:18px;position:relative}.heading:after{content:'';position:absolute;left:0;bottom:-1px;width:32px;height:2px;background:#1673e8}
+.overview-content .cards{gap:10px}.overview-content .card{border-color:#dbe3ec;position:relative;overflow:hidden;border-radius:8px}.overview-content .card:after{content:'';position:absolute;right:16px;top:17px;width:5px;height:5px;background:#8ca5be;transform:rotate(45deg)}
+.overview-content .card:first-child{background:#102840;border-color:#102840}.overview-content .card:first-child:before{content:'';position:absolute;right:-40px;bottom:-65px;width:190px;height:105px;border:1px solid #2b608b;border-radius:50%;transform:rotate(-23deg);pointer-events:none}.overview-content .card:first-child:after{background:#4aa3ff}.overview-content .card:first-child .label{color:#c0cedb}.overview-content .card:first-child .value{color:white}.overview-content .card:first-child .delta{color:#c0cedb}.overview-content .card:first-child .delta.negative{color:#ffb3a9}
+.value,.rate-value,.research-results strong,.integrator-stats strong{font-variant-numeric:tabular-nums;letter-spacing:-1px;font-weight:600}
+.panel,.overview-layout>.catalyst-rail,.scenario-card{border-color:#dce3eb;border-radius:8px;box-shadow:0 2px 3px #10284003}.panel h2,.rail-heading h2{font-weight:650}
+.activity-toolbar .metric-tabs{background:#edf1f5;border-color:#e0e6ee}.activity-toolbar .metric-tabs button.on,.activity-toolbar .interval-tabs button.on{background:#102840;color:white;box-shadow:inset 0 -2px 0 #1673e8}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #1673e8;outline-offset:3px}.choice-group .active{box-shadow:none}
+.scenario-card{background:#fff;position:relative;overflow:hidden}.scenario-card:after{content:'';position:absolute;right:-35px;top:-58px;width:160px;height:95px;border:1px solid #dbe7f4;border-radius:50%;transform:rotate(-23deg);pointer-events:none}.scenario-card:hover{box-shadow:0 8px 24px #10284010;border-color:#8eaac5;transform:translateY(-3px)}
+.integrator-stats>div{background:#fff;border:1px solid #dce3eb;border-radius:8px;padding:18px}.integrator-stats>div:first-child{border-top:2px solid #1673e8}.integrator-table thead th{background:#edf2f7;color:#52677a}.integrator-table tbody tr:hover{background:#eef5fc}.integrator-table tbody td:first-child{border-left:2px solid transparent}.integrator-table tbody tr:hover td:first-child{border-left-color:#1673e8}
+.workspace-dialog{border-color:#d8e2ec}.workspace-dialog::backdrop{background:#0b1c30a0}.dialog-close{background:#eef2f7;color:#163550}.about-actions button{background:#102840;color:white;border-color:#102840}.methods-dialog a{color:#1c67b7}
+@media(max-width:760px){header nav{height:61px}header .talvoryn-brand{width:126px;height:36px;flex-basis:126px}header .talvoryn-brand svg{width:126px;height:36px}header nav>a:not(.brand){padding:0 6px;height:32px;font-size:10px}.about-trigger{padding:7px;margin-left:0;height:32px}.heading{padding-bottom:10px}.integrator-stats>div{padding:14px}}
+/* Keep the whale reading visible; only the news list may scroll on short screens. */
+@media(min-width:761px){.overview-layout>.catalyst-rail{top:91px;height:calc(100dvh - 110px);max-height:none;overflow:hidden;display:flex;flex-direction:column}.overview-layout>.catalyst-rail .rail-heading{padding:12px 14px 6px;flex:none}.overview-layout>.catalyst-rail .rail-items{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 14px;scrollbar-width:thin}.overview-layout>.catalyst-rail .rail-item{padding:6px 0;gap:6px}.overview-layout>.catalyst-rail .rail-item .economic-title{font-size:11px;line-height:1.4}.overview-layout>.catalyst-rail #railPages{margin:8px 14px 10px;min-height:24px;flex:none}.overview-layout>.catalyst-rail #whaleAccumulationSlot{flex:none;padding:13px 14px 15px}.overview-layout>.catalyst-rail .whale-score{margin:12px 0 17px;font-size:28px;line-height:1.2}.overview-layout>.catalyst-rail .whale-scale{margin-top:9px;font-size:9px;line-height:1.4}.overview-layout>.catalyst-rail .whale-heading{min-height:23px}}
+/* Explicit full-width credit alignment, independent of page grid/flex layout. */
+main>footer,main.overview-layout>footer{grid-column:1/-1;display:flex!important;justify-content:center!important;align-items:center;text-align:center;width:100%;padding:22px 0;margin:24px 0 0;gap:5px;font-size:12px}main>footer a{display:inline-block;color:#102840;font-weight:650}
+.rate-panel .chart{overflow:visible}.rate-panel .chart text{font-family:Inter,Arial,sans-serif}.legend i{width:9px;height:9px}.legend{gap:18px;color:#526477}.workspace-dialog>p:first-of-type{margin-top:0;padding-right:20px}.workspace-dialog .dialog-close{margin-left:12px}
+@media(max-width:760px){.overview-layout>.catalyst-rail{height:auto;max-height:none;overflow:visible}.overview-layout>.catalyst-rail .rail-items{overflow:visible;max-height:none}.overview-layout>.catalyst-rail #whaleAccumulationSlot{padding:17px 15px}.overview-layout>.catalyst-rail .whale-score{margin:15px 0 20px}}
+
+/* Metric cards: one blue rule, white surfaces throughout. */
+.overview-content .cards .card,.overview-content .cards .card:first-child,.integrator-stats>div{background:#fff;border:1px solid #dbe3ec;border-top:2px solid #1673e8}
+.overview-content .cards .card:before,.overview-content .cards .card:after{display:none}
+.overview-content .cards .card:first-child .label{color:#69766c}.overview-content .cards .card:first-child .value{color:var(--ink)}.overview-content .cards .card:first-child .delta{color:var(--green)}.overview-content .cards .card:first-child .delta.negative{color:#c04a40}
+.scenario-controls .choice-group button,.choice-group button.active,.choice-group button[aria-pressed=true]{box-shadow:none!important}
+
+/* Transparent artwork sits directly on the header surface. */
+header .talvoryn-brand{background:none;border:0;box-shadow:none;overflow:visible}header .talvoryn-brand svg{mix-blend-mode:normal;background:none;filter:none}
+
+/* The mascot grips the About card without covering its content or controls. */
+.about-dialog{position:fixed;overflow:visible;padding-top:28px;isolation:isolate;margin:auto}
+.about-mascot{position:absolute;width:240px;height:120px;object-fit:contain;left:50%;top:-112px;transform:translateX(-50%);pointer-events:none;user-select:none;z-index:2}
+.about-dialog .dialog-close{position:relative;z-index:3}
+@media(max-height:600px){.about-mascot{width:170px;height:85px;top:-78px}.about-dialog{max-height:calc(100dvh - 110px)}}
+@media(max-width:420px){.about-mascot{width:210px;height:105px;top:-98px}.about-dialog{padding:24px 20px}}

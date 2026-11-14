@@ -1,0 +1,152 @@
+{
+  "version": "exchange-v1-20261114",
+  "checkedAt": "2026-11-14T03:26:59.414289+00:00",
+  "cexSource": "https://www.binance.com/bapi/apex/v1/public/apex/market/por/address",
+  "cex": [
+    {
+      "account": "10da3e6516672e0317d9c20e0bf89018271b18c5e3b01ac7b246b2417636a57b",
+      "name": "Binance",
+      "custodian": "Ceffu"
+    },
+    {
+      "account": "1fc0d96bc0304bfaa1672d2ee84bfeed86ed2db1bdccedab95fa9792a4438a24",
+      "name": "Binance",
+      "custodian": ""
+    },
+    {
+      "account": "222d728f5436cf3660487cb1889233c622b01ce226fcc0b33e485bb62b8f0239",
+      "name": "Binance",
+      "custodian": ""
+    },
+    {
+      "account": "27ddc83845172d5ee380af7ba6bcc524145892ff0b91a6078e9ae6d26655e56a",
+      "name": "Binance",
+      "custodian": ""
+    },
+    {
+      "account": "32dd60da8542dd5a7ec2d4d05c0dda499be64b0b1d1e10572b169429c56537d7",
+      "name": "Binance",
+      "custodian": ""
+    },
+    {
+      "account": "39a3319641d4117fa8c20677a115f49f48ef4fcba1bc8119d418e582d96b35d5",
+      "name": "Binance",
+      "custodian": ""
+    },
+    {
+      "account": "3d9ccff55cef5a3efd1fe14b14509b726123910845243ef1671b45e46f214324",
+      "name": "Binance",
+      "custodian": ""
+    },
+    {
+      "account": "451913e633c72fb951effe076d3bd2977e3f08083dcf6c87fa89992b0d437c5c",
+      "name": "Binance",
+      "custodian": ""
+    },
+    {
+      "account": "56203c5b21b828175fa9c1fd4161ecaca76de9a1f6008935eeb9b4d6dc821a22",
+      "name": "Binance",
+      "custodian": ""
+    },
+    {
+      "account": "5c33c6218d47e00ef229f60da78d0897e1ee9665312550b8afd5f9c7bc6957d2",
+      "name": "Binance",
+      "custodian": ""
+    },
+    {
+      "account": "7747991786f445efb658b69857eadc7a57b6b475beec26ed14da8bc35bb2b5b6",
+      "name": "Binance",
+      "custodian": ""
+    },
+    {
+      "account": "7e6e17fcb8e8e6a22ecd47bbd1b58b1af3582b97bbfd4a8d974bb9c266fa282b",
+      "name": "Binance",
+      "custodian": ""
+    },
+    {
+      "account": "9c484fa5d2d069569ba063fc555c34e621ccd88fdbb0295fc79bad232621c5c1",
+      "name": "Binance",
+      "custodian": ""
+    },
+    {
+      "account": "b8caf00f8f925cc7b3925def6db361974403082ac7e7710b8342e0b20ac496e9",
+      "name": "Binance",
+      "custodian": "Ceffu"
+    },
+    {
+      "account": "bc2fa68aa5d9a0d4e75fbe5659369aa13e1bccf7cabf81ac5d007ae0e51fcac3",
+      "name": "Binance",
+      "custodian": "Ceffu"
+    },
+    {
+      "account": "binance1.near",
+      "name": "Binance",
+      "custodian": ""
+    },
+    {
+      "account": "binancecold3.near",
+      "name": "Binance",
+      "custodian": ""
+    },
+    {
+      "account": "c6f10c6993a97c90e34ce60c5ea3ccb4915cf731daff0e7a2e5d93ebc879cc74",
+      "name": "Binance",
+      "custodian": ""
+    },
+    {
+      "account": "ce766fc85f14b52d177bb0620a3be19585783644282b16ff3cfe3f4f699ece03",
+      "name": "Binance",
+      "custodian": ""
+    },
+    {
+      "account": "d04204b6591fefb973a8ed60929f8211af89ee38020da9faf905acdc7a320063",
+      "name": "Binance",
+      "custodian": ""
+    },
+    {
+      "account": "e1074e251c7350b8a4480816fffd897b727011df579e04cc19f890fd48fd8830",
+      "name": "Binance",
+      "custodian": ""
+    },
+    {
+      "account": "e1a70d1d2b8df95e0742c5aa18eb9089d84d5365fead073ac77d4c115cf3e264",
+      "name": "Binance",
+      "custodian": ""
+    },
+    {
+      "account": "e37e1cf6cd9c8601881799e531c958cd0ca01c734a6349aa88a23489c4258d05",
+      "name": "Binance",
+      "custodian": ""
+    },
+    {
+      "account": "kucoinc.near",
+      "name": "KuCoin",
+      "custodian": "",
+      "source": "https://github.com/DefiLlama/DefiLlama-Adapters/blob/main/projects/kucoin/index.js"
+    },
+    {
+      "account": "e589457354361489a89039b8be6737cbc2db4d13919b6ccf23889a60f3b0d8f3",
+      "name": "KuCoin",
+      "custodian": "",
+      "source": "https://github.com/DefiLlama/DefiLlama-Adapters/blob/main/projects/kucoin/index.js"
+    },
+    {
+      "account": "7b865db190b966fe6ea30d0e7cc44ce42c4ea4f159a4b0b937122f166fc3ae28",
+      "name": "KuCoin",
+      "custodian": "",
+      "source": "https://github.com/DefiLlama/DefiLlama-Adapters/blob/main/projects/kucoin/index.js"
+    }
+  ],
+  "dex": [
+    {
+      "account": "v2.ref-finance.near",
+      "name": "Rhea / Ref AMM",
+      "source": "https://github.com/ref-finance/ref-sdk/blob/main/README.md"
+    },
+    {
+      "account": "dclv2.ref-labs.near",
+      "name": "Rhea / Ref DCL",
+      "source": "https://github.com/ref-finance/ref-sdk/blob/main/README.md"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+import assert from 'node:assert/strict';import {buybackStory,mergeState} from '../worker/collectors.mjs';
+const end=Date.parse('2026-11-13T00:00:00Z');const row=(days,n)=>({asset_type:'Near',account_id:'buybacks.multisignature.near',receipt_id:'r'+days,transfer_index:0,block_timestamp:String(BigInt(end-days*86400000)*1000000n),amount:String(BigInt(n)*10n**24n)});
+const rows=[row(1,300),row(35,200),row(65,100)];let r=buybackStory([...rows,rows[0]],'2026-11-13',true);assert.equal(r.evidence.current,300);assert.match(r.title,/highest in three months/);assert.equal(buybackStory(rows,'2026-11-13',false),null);
+const series=Array.from({length:60},(_,i)=>[(end-(i+1)*86400000)/1000,i<30?1:2]);r=buybackStory([row(1,250),row(35,200),row(65,400)],'2026-11-13',true,series,series);assert.match(r.title,/maintains buybacks/);assert.equal(r.evidence.fees.change,-.5);
+const state={items:[{id:'chain-buyback-old',date:'2026-11-12'}]};mergeState(state,{published:[r]});assert.equal(state.items.length,1);assert.equal(state.items[0].id,'buyback-summary');console.log('Buyback totals, equal windows, duplicate receipts, headline conditions and transfer-row removal passed.');

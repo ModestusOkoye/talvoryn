@@ -1,0 +1,2 @@
+# Only model fitting requires a third-party Python dependency.
+numpy==2.3.5
