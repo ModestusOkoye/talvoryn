@@ -1,12 +1,10 @@
 # Talvoryn
 
-**Researching NEAR through technical, fundamental and on-chain evidence.**
+**One-stop intelligence and research dashboard for NEAR. Built for NEAR Hackathon 2026.**
 
-[Live Platform](https://talvoryn.pages.dev) · [Methodology](https://talvoryn.pages.dev/methodology.html) · [Catalysts](https://talvoryn.pages.dev/catalysts.html) · [Research Thesis (planned)](#research-thesis-planned)
+[Live Platform](https://talvoryn.pages.dev) · [Methodology](https://talvoryn.pages.dev/methodology.html) · [Catalysts](https://talvoryn.pages.dev/catalysts.html) · [Research Thesis](research-thesis.md)
 
-![Talvoryn Overview — actual top section of the live research platform](docs/assets/talvoryn-overview.png)
-
-*Live capture of the [Talvoryn Overview](https://talvoryn.pages.dev/performance.html) interface. Data shown reflects the time of capture.*
+![Talvoryn Overview](docs/assets/talvoryn-overview.png)
 
 ## Understanding NEAR beyond its price chart
 
@@ -28,7 +26,7 @@ The aim is to follow a changing picture of NEAR, form research questions and **r
 | [**Integrators**](https://talvoryn.pages.dev/integrators.html) | Activity and attributed market share across eligible third-party applications using NEAR Intents |
 | **Wallet intelligence** | Verified exchange-related flows across a monitored sample of large NEAR wallets, surfaced in Overview |
 | [**Methodology**](https://talvoryn.pages.dev/methodology.html) | Data sources, formulas, coverage, verification and reproducibility |
-| **Research Thesis — planned** | Record hypotheses, supporting and contradicting evidence, milestones and changes in our view |
+| [**Research Thesis**](research-thesis.md) | AI-readable research brief covering the hypothesis, evidence, counterarguments and what to verify next |
 
 ## Three pillars of NEAR research
 
@@ -36,7 +34,7 @@ The aim is to follow a changing picture of NEAR, form research questions and **r
 
 We compare NEAR's market performance with broader conditions, including BTC and ETH. Price trends, momentum and relative performance provide context for the market's reaction to developments.
 
-**Research direction:** richer technical indicators and historical comparisons. The README does not imply that every planned TA indicator is already live.
+The research combines market history and relative-performance comparisons, with scope to extend technical indicators over time.
 
 ### 2. Fundamental analysis (FA) — What could change NEAR's outlook?
 
@@ -111,24 +109,13 @@ The statistical Forecast model is **not automatically retrained with each hourly
 
 A successful check is not the same as a new observation. The website's [Data Freshness table](https://talvoryn.pages.dev/methodology.html#freshnessTitle) distinguishes **Data through (UTC)** from **Last successful check (UTC)**.
 
-## Research Thesis — planned
+## Research Thesis
 
-The planned thesis module will be a **working research record**, not merely a place to post opinions.
+[**Read research-thesis.md**](research-thesis.md)
 
-A thesis should document:
+The research thesis is a standalone Markdown brief designed for both human review and AI-assisted analysis. It outlines what Talvoryn is investigating, which measurements support or challenge the hypothesis, what remains uncertain, and the evidence needed to update the view.
 
-| Field | Why it matters |
-| --- | --- |
-| Research question and hypothesis | State exactly what we are testing |
-| Supporting evidence | Identify what strengthens the hypothesis |
-| Contradicting evidence | Record what weakens it |
-| Validation and invalidation criteria | Agree in advance what could change our view |
-| Metrics to monitor | Link the thesis to relevant Talvoryn evidence |
-| Dated research history | Preserve how the view evolves rather than rewriting old conclusions |
-
-**Example question:** *Does growing NEAR Intents traction translate into stronger economic demand for NEAR?* We might compare volume and integrator adoption with revenue, buyback-wallet inflows, issuance, market behaviour and relevant catalysts. Stronger activity does not by itself prove the thesis; conflicting results must also be recorded.
-
-The module is **planned**. It is not currently an automated thesis evaluation engine.
+**Download or open the file in Claude, ChatGPT, Codex or another AI assistant** to interrogate the thesis, look for counterarguments, compare new evidence, or prepare a dated research update. Include fresh datasets or allow source retrieval for a current assessment; the thesis file alone is not a live data feed.
 
 ## Research you can verify
 
@@ -189,10 +176,10 @@ For the precise setup and verification procedure, see [Architecture](docs/ARCHIT
 - A current total-supply observation does not independently prove historical gross issuance or burns.
 - Earlier saved Forecast models may lack a rebuild timestamp; the updated builder records it on future successful builds.
 - Catalyst discovery is not the same as reviewed, published fundamental research.
-- Exact downloadable public research snapshots and the Research Thesis module are future improvements.
+- Exact downloadable public research snapshots remain a future improvement.
 
 The original research evidence is preserved. Missing values are not silently replaced with estimates.
 
 ---
 
-**Talvoryn — tracking NEAR's evolving thesis through market, fundamental and on-chain evidence.**
+**Talvoryn — NEAR intelligence through technical, fundamental and on-chain research.**
