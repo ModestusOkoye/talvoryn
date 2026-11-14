@@ -17,8 +17,8 @@ try{
  assert(first.pending.every(x=>x.status.includes('review')));
  const again=await discoverCatalysts(first);
  assert.equal(again.pending.length,2,'Candidates deduplicate on refresh');
- const reviewed=await discoverCatalysts({...again,reviewedIds:[again.pending[0].id]});
- assert.equal(reviewed.pending.length,2,'Existing pending entries remain pending until explicitly removed by review workflow');
+ const reviewed=await discoverCatalysts({...again,pending:again.pending.slice(1),reviewedIds:[again.pending[0].id]});
+ assert.equal(reviewed.pending.length,1,'Reviewed candidates do not reappear');
  assert.equal(calls.length,6);
  console.log('Catalyst public source candidate filtering, bounded discovery and deduplication passed.');
 }finally{globalThis.fetch=original}
