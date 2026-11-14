@@ -4,7 +4,9 @@
 
 [Live Platform](https://talvoryn.pages.dev) · [Methodology](https://talvoryn.pages.dev/methodology.html) · [Catalysts](https://talvoryn.pages.dev/catalysts.html) · [Research Thesis (planned)](#research-thesis-planned)
 
-> **Platform preview:** The first visual in this README will be a genuine capture of the top of [Talvoryn Overview](https://talvoryn.pages.dev/performance.html). No simulated interface or unverified screenshot has been substituted.
+![Talvoryn Overview — actual top section of the live research platform](docs/assets/talvoryn-overview.png)
+
+*Live capture of the [Talvoryn Overview](https://talvoryn.pages.dev/performance.html) interface. Data shown reflects the time of capture.*
 
 ## Understanding NEAR beyond its price chart
 
