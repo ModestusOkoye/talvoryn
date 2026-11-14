@@ -1,0 +1,13 @@
+/* Methodology's verified source-freshness table. */
+.method-freshness{margin:22px 0 26px;padding:18px 20px;border:1px solid #dde4ec;background:#fff;border-radius:9px}
+.method-freshness h2{margin:0 0 8px;font-size:19px}
+.method-freshness p{margin:0 0 15px;font-size:13px;line-height:1.6}
+.method-freshness .freshness-scroll{max-width:100%;overflow-x:auto}
+.method-freshness table{width:100%;border-collapse:collapse;font-size:12px;line-height:1.5;min-width:610px}
+.method-freshness th,.method-freshness td{text-align:left;vertical-align:top;padding:10px 9px;border-bottom:1px solid #e4e8ed}
+.method-freshness thead th{background:#f2f5f8;color:#314b61;font-weight:650}
+.method-freshness tbody th{font-weight:550;white-space:normal}
+.method-freshness td{font-variant-numeric:tabular-nums}
+.method-freshness td small{color:#6d7984;font-size:10px}
+.method-freshness .freshness-note{margin-top:12px;color:#5b6976;font-size:11px}
+@media(max-width:760px){.method-freshness{padding:14px 12px;margin:18px 0}.method-freshness table{min-width:565px}}
