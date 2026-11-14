@@ -1,42 +1,196 @@
 # Talvoryn
 
-[Public dashboard](https://talvoryn.pages.dev) · [Methodology](https://talvoryn.pages.dev/methodology.html)
+**Researching NEAR through technical, fundamental and on-chain evidence.**
 
-Talvoryn makes NEAR Intents activity, fees, revenue, buyback-wallet inflows and token supply easier to compare. Overview contains historical charts and period selectors; Forecast supports issuance-offset, price and revenue scenarios with editable assumptions and comparison. Integrators and sampled whale analytics provide additional context. Telegram and weekly newsletter controls are clearly marked **Coming soon** and do not collect information.
+[Live Platform](https://talvoryn.pages.dev) · [Methodology](https://talvoryn.pages.dev/methodology.html) · [Catalysts](https://talvoryn.pages.dev/catalysts.html) · [Research Thesis (planned)](#research-thesis-planned)
 
-## Current state
+> **Platform preview:** The first visual in this README will be a genuine capture of the top of [Talvoryn Overview](https://talvoryn.pages.dev/performance.html). No simulated interface or unverified screenshot has been substituted.
 
-The frontend is deployed on Cloudflare Pages. The production recovery restores dated historical files and refreshes supported observations from their original sources. It does not label saved records as a working live service. Some supply and wallet coverage ends earlier than activity.
+## Understanding NEAR beyond its price chart
 
-An independent Worker with D1 persistence and an hourly Cron configuration template is implemented. A direct scheduled-handler test ingested actual provider data and verified persistence after reopening the local database. **Cloudflare Worker/D1/service-binding activation is blocked by missing deployment access. The hourly Cron Trigger has not been activated or proven to run in production.**
+NEAR is an evolving blockchain ecosystem. Following its trajectory means examining **market behaviour (TA)**, **developments that might change its fundamentals (FA)** and **what the blockchain actually records (on-chain analysis)**.
 
-See [source timestamps](dist/data/source-status.json) and [deployment architecture](docs/ARCHITECTURE.md). Current observations are not evidence of complete historical issuance/burns coverage. The original ChatGPT Site and its evidence archive remain intact.
+**Talvoryn connects these three perspectives in one research environment.**
 
-## Run and verify
+NEAR Intents is a central part of that work—not the entire research thesis. Its swaps, fees, revenue, integrations and buyback-wallet activity provide measurable signs of traction. We compare those signals with NEAR's supply, market performance, wallet activity and wider ecosystem catalysts to see whether the evidence supports or challenges our expectations.
 
-Requires Node.js 22+ for the application tests, Node.js 24+ for the local SQLite integration test, and Python 3.10+ for refresh scripts. Frontend code has no npm runtime dependencies. Model fitting requires NumPy from `requirements-models.txt`.
+The aim is to follow a changing picture of NEAR, form research questions and **revise our conclusions when new evidence demands it**.
 
-```sh
+## Explore Talvoryn
+
+| Feature | What you can explore |
+| --- | --- |
+| [**Overview**](https://talvoryn.pages.dev/performance.html) | Market performance, Intents volume, fees, revenue, buyback-wallet inflows and token economics |
+| [**Catalysts**](https://talvoryn.pages.dev/catalysts.html) | Governance decisions, protocol upgrades, product launches, partnerships, adoption and other developments relevant to NEAR's fundamentals |
+| [**Forecast**](https://talvoryn.pages.dev/research.html) | Issuance-offset, revenue and exploratory price scenarios with adjustable assumptions and comparison |
+| [**Integrators**](https://talvoryn.pages.dev/integrators.html) | Activity and attributed market share across eligible third-party applications using NEAR Intents |
+| **Wallet intelligence** | Verified exchange-related flows across a monitored sample of large NEAR wallets, surfaced in Overview |
+| [**Methodology**](https://talvoryn.pages.dev/methodology.html) | Data sources, formulas, coverage, verification and reproducibility |
+| **Research Thesis — planned** | Record hypotheses, supporting and contradicting evidence, milestones and changes in our view |
+
+## Three pillars of NEAR research
+
+### 1. Technical analysis (TA) — What is the market doing?
+
+We compare NEAR's market performance with broader conditions, including BTC and ETH. Price trends, momentum and relative performance provide context for the market's reaction to developments.
+
+**Research direction:** richer technical indicators and historical comparisons. The README does not imply that every planned TA indicator is already live.
+
+### 2. Fundamental analysis (FA) — What could change NEAR's outlook?
+
+**Catalysts sit at the centre of our fundamental research.** We follow governance and tokenomics proposals, protocol upgrades, ecosystem launches, integrations, partnerships, adoption and competitive developments.
+
+A headline alone is not a conclusion. For each meaningful catalyst, the research asks:
+
+- **What happened?** Is it a proposal, announcement, implementation or verified result?
+- **Why does it matter?** Which part of NEAR's adoption, utility or economics might it affect?
+- **What should we watch?** What observable evidence could confirm—or challenge—the expected impact?
+
+NEAR Intents contributes fundamental *traction evidence*, but the analysis of NEAR extends beyond Intents.
+
+### 3. On-chain analysis — What does the blockchain show?
+
+Blockchain evidence helps test the fundamental story. Talvoryn examines finalised supply observations, reconstructed issuance and burns, inbound NEAR transfers to the buyback wallet and qualifying exchange-related whale flows.
+
+**Buyback wallet inflows and token supply belong here as measured on-chain evidence.** Their *economic interpretation* also informs fundamental analysis, but they are not the same as governance or product catalysts.
+
+An exchange deposit does not prove a sale; a wallet withdrawal does not prove a purchase. We separate observable transfers from unsupported explanations.
+
+### How the pillars work together
+
+```mermaid
+flowchart TD
+    TA["Technical analysis<br/>Price and relative market behaviour"]
+    FA["Fundamental analysis<br/>Catalysts, governance and adoption"]
+    OC["On-chain analysis<br/>Supply, wallet flows and activity"]
+    TA --> R["Research questions and thesis"]
+    FA --> R
+    OC --> R
+    R --> E["Define evidence that supports or challenges the thesis"]
+    E --> M["Monitor new observations"]
+    M --> V["Maintain, revise or reject the thesis"]
+    V --> M
+```
+
+These are **complementary perspectives**, not three interchangeable datasets. A catalyst may suggest a possible change; on-chain and economic observations can help assess whether it materialises; market data shows how the price has behaved.
+
+## How Talvoryn works
+
+Collection and research modelling are separate processes. Different sources can cover different periods, so each measurement keeps its own observation cutoff and recorded check time.
+
+```mermaid
+flowchart TD
+    A["DefiLlama<br/>Intents activity and market prices"] --> D["Validate source values and coverage"]
+    B["NEAR RPC and FastNEAR<br/>Supply and transfers"] --> D
+    C["NearStats<br/>Integrator attribution"] --> D
+    D --> DB["Cloudflare Worker + D1<br/>Versioned datasets and job status"]
+    DB --> SITE["Talvoryn<br/>Overview, Integrators and source freshness"]
+    H["Saved historical research inputs"] --> MODEL["Python statistical model build"]
+    MODEL --> F["Saved model and model-build timestamp"]
+    F --> SITE
+    OFF["Official proposals and source updates"] --> DISC["Catalyst discovery / review"]
+    DISC -. "Reviewed findings only" .-> SITE
+```
+
+The statistical Forecast model is **not automatically retrained with each hourly data refresh**. Source monitoring can identify candidate catalysts; a candidate is not automatically an approved interpretation or a published story.
+
+### Data schedules and transparency
+
+| Dataset | Collection/check schedule |
+| --- | --- |
+| Intents volume, fees and revenue | Hourly |
+| NEAR, BTC and ETH daily prices | Hourly |
+| Current finalised supply observation | Hourly |
+| Buyback-wallet transfers | Hourly |
+| Integrators | Hourly |
+| Sampled whale activity | Every 3 hours |
+| Historical issuance and burns | Separate archival reconstruction |
+| Catalyst source discovery | Hourly job code added; deployed execution requires verification |
+
+A successful check is not the same as a new observation. The website's [Data Freshness table](https://talvoryn.pages.dev/methodology.html#freshnessTitle) distinguishes **Data through (UTC)** from **Last successful check (UTC)**.
+
+## Research Thesis — planned
+
+The planned thesis module will be a **working research record**, not merely a place to post opinions.
+
+A thesis should document:
+
+| Field | Why it matters |
+| --- | --- |
+| Research question and hypothesis | State exactly what we are testing |
+| Supporting evidence | Identify what strengthens the hypothesis |
+| Contradicting evidence | Record what weakens it |
+| Validation and invalidation criteria | Agree in advance what could change our view |
+| Metrics to monitor | Link the thesis to relevant Talvoryn evidence |
+| Dated research history | Preserve how the view evolves rather than rewriting old conclusions |
+
+**Example question:** *Does growing NEAR Intents traction translate into stronger economic demand for NEAR?* We might compare volume and integrator adoption with revenue, buyback-wallet inflows, issuance, market behaviour and relevant catalysts. Stronger activity does not by itself prove the thesis; conflicting results must also be recorded.
+
+The module is **planned**. It is not currently an automated thesis evaluation engine.
+
+## Research you can verify
+
+A useful research figure should be traceable. Talvoryn documents **where it came from, what period it covers, how it was calculated and where the evidence is incomplete**.
+
+- [Technical Methodology](docs/METHODOLOGY.md) — formulas, research flows, verification rules, worked examples and reproduction steps
+- [Data Sources](docs/DATA_SOURCES.md) — original providers, cutoff definitions and collection schedules
+- [Architecture](docs/ARCHITECTURE.md) — Cloudflare infrastructure, persisted datasets, deployment and recovery checks
+
+## Run locally
+
+Requirements: **Node.js 22+** for core tests, **Node.js 24+** for the disk-backed SQLite integration test, **Python 3.10+**, and **NumPy** for statistical model fitting.
+
+```bash
+git clone https://github.com/ModestusOkoye/talvoryn.git
+cd talvoryn
+
 npm run dev
 # Open http://localhost:8080
+```
+
+Run core validation and refresh supported sources:
+
+```bash
 npm run test:core
 python3 -m pip install -r requirements-models.txt
 python3 scripts/refresh_performance.py --skip-supply
 python3 scripts/refresh_integrators.py
 python3 scripts/build_research_models.py
+```
+
+The `--skip-supply` flag avoids rerunning expensive archival reconstruction and preserves verified supply evidence. Rebuilding the statistical model is a **separate explicit command**.
+
+Optional real-provider local scheduled-handler test:
+
+```bash
 npm run test:scheduled:live
 ```
 
-The live integration test explicitly contacts public providers and writes only ignored local `.qa/` state. It does not create Cloudflare resources or incur Cloudflare charges. The skip-supply refresh preserves existing supply history instead of rebuilding archival evidence.
+This test contacts public providers and exercises local disk-backed persistence. **It does not verify an actual Cloudflare Cron execution.**
 
 ## Deployment
 
-Pages uses branch `main`, output `dist`, and build command `exit 0`; it also bundles the read-only Pages Functions. Existing chart and Forecast calculations are preserved. Follow [ARCHITECTURE](docs/ARCHITECTURE.md) for the free D1/Worker activation steps, actual binding names, trigger and verification. Credentials belong in secret storage, never in this repository.
+- **Cloudflare Pages:** public interface from the `dist/` directory
+- **Cloudflare Worker:** read-only data APIs and scheduled source checks
+- **Cloudflare D1:** versioned research datasets and collection health
+- **Python scripts:** historical reconstruction and statistical model building
+- **GitHub:** implementation, tests and reproducible methodology
 
-## Documentation
+The public Methodology has displayed successful production D1-backed checks for Intents activity, prices, finalised supply, buybacks and integrators. That is evidence of those **recorded successful checks**, not a guarantee of continuous Cron execution. The separate whale job has not yet displayed successful status. New Catalyst source-discovery code still requires production deployment and verification.
 
-- [Methodology](docs/METHODOLOGY.md): definitions, formulas, exclusions and reproduction.
-- [Data sources](docs/DATA_SOURCES.md): original URLs, source timing and limitations.
-- [Architecture](docs/ARCHITECTURE.md): actual deployment state, storage, retries and activation.
+For the precise setup and verification procedure, see [Architecture](docs/ARCHITECTURE.md). Keep credentials in secret storage, not the repository.
 
-For research and education. Forecasts describe conditional scenarios; they are not investment promises.
+## Research coverage and known limits
+
+- Historical issuance/burn reconstruction is incomplete beyond the verified monthly cutoff of **10 November 2026**; daily burn coverage remains incomplete.
+- Wallet analysis represents a monitored sample, **not** a verified network-wide ranking of NEAR holders.
+- A current total-supply observation does not independently prove historical gross issuance or burns.
+- Earlier saved Forecast models may lack a rebuild timestamp; the updated builder records it on future successful builds.
+- Catalyst discovery is not the same as reviewed, published fundamental research.
+- Exact downloadable public research snapshots and the Research Thesis module are future improvements.
+
+The original research evidence is preserved. Missing values are not silently replaced with estimates.
+
+---
+
+**Talvoryn — tracking NEAR's evolving thesis through market, fundamental and on-chain evidence.**
