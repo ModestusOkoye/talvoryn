@@ -1,0 +1,43 @@
+{
+  "checkedAt": "2026-11-11T17:23:53.520126+00:00",
+  "allBlockchainChecksPassed": true,
+  "fullBlockResponsesChecked": 754,
+  "months": [
+    {
+      "month": "2026-10",
+      "epochCount": 104,
+      "UTCBoundaries": "passed",
+      "epochCoverage": "passed",
+      "supplyConservation": "passed"
+    },
+    {
+      "month": "2026-11",
+      "epochCount": 35,
+      "UTCBoundaries": "passed",
+      "epochCoverage": "passed",
+      "supplyConservation": "passed"
+    }
+  ],
+  "rewardCrossCheck": {
+    "responseEpoch": 4959,
+    "paidAtBlock": "ApRh8rbDsJ5GVdji3Y6DK1hJ16YeH4oJkFcVFH3qdUp7",
+    "mintedYocto": "25705595060010653019659984344",
+    "matched": true
+  },
+  "burnMethod": "Inferred from exact issuance minus observed change in total supply",
+  "networkFeesCollected": false,
+  "dailyCoverage": {
+    "from": "2026-04-01",
+    "toExclusive": "2026-11-11",
+    "status": "incomplete",
+    "reason": "Public archival RPC and block-data API returned HTTP 429. Authenticated archival access is required to finish daily coverage.",
+    "issuanceDays": 54,
+    "burnDays": 0,
+    "expectedDays": 224,
+    "sources": [
+      "https://archival-rpc.mainnet.fastnear.com",
+      "https://mainnet.neardata.xyz"
+    ],
+    "method": "Daily issuance from complete consecutive epoch coverage. Burns only where exact UTC boundary supply records are available. Null means missing; never monthly-average interpolation."
+  }
+}

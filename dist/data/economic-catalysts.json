@@ -1,0 +1,38 @@
+{
+  "reviewedAt": "2026-11-13",
+  "items": [
+    {
+      "id": "hsp029",
+      "kind": "proposals",
+      "title": "NEAR proposes lower inflation",
+      "date": "2026-10-07",
+      "checkedAt": "2026-11-13",
+      "status": "Vote passed \u00b7 activation not verified",
+      "affects": [
+        "Supply"
+      ],
+      "summary": "The proposal would lower annual issuance from 2.5% to 1.6% over 24 months.",
+      "effect": "Fewer new NEAR would enter supply. The same burns and buybacks would offset a larger share of issuance.",
+      "next": "Watch for the implementation date and whether actual issuance starts falling.",
+      "url": "https://gov.near.org/t/hsp-029-establish-a-24-month-issuance-ramp-to-a-1-6-target-rate-of-near-token-emissions/42644",
+      "simulation": "hsp029"
+    },
+    {
+      "id": "intents-fees",
+      "kind": "news",
+      "title": "Intents fees fund NEAR buybacks",
+      "date": "2026-02-24",
+      "checkedAt": "2026-11-13",
+      "status": "Announced live",
+      "affects": [
+        "Revenue",
+        "Buybacks"
+      ],
+      "summary": "NEAR announced that the Intents fee switch is live, with revenue supporting NEAR buybacks.",
+      "effect": "More trading can generate more revenue for buybacks. The result depends on the fee rate, revenue capture and how much is spent.",
+      "next": "Watch monthly revenue and recorded buybacks to see whether the effect grows.",
+      "url": "https://near.org/blog/evolving-near-tokenomics",
+      "simulation": "intents-fees"
+    }
+  ]
+}

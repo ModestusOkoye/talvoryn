@@ -7,7 +7,7 @@ import argparse,calendar,datetime as dt,json,math,pathlib,statistics,time,urllib
 from decimal import Decimal
 ROOT=pathlib.Path(__file__).resolve().parents[1];OUT=ROOT/'dist/data';OUT.mkdir(parents=True,exist_ok=True)
 UTC=dt.timezone.utc; START=dt.datetime(2026,4,1,tzinfo=UTC);NOW=dt.datetime.now(UTC); END=NOW.replace(hour=0,minute=0,second=0,microsecond=0)
-CACHED=argparse.ArgumentParser();CACHED.add_argument('--cached',action='store_true');cached=CACHED.parse_args().cached
+CACHED=argparse.ArgumentParser();CACHED.add_argument('--cached',action='store_true');CACHED.add_argument('--skip-supply',action='store_true',help='Preserve already verified supply history without querying archival evidence');options=CACHED.parse_args();cached=options.cached
 SOURCES={
  'volume':'https://api.llama.fi/summary/dexs/near-intents?excludeTotalDataChart=false&excludeTotalDataChartBreakdown=true',
  'fees':'https://api.llama.fi/summary/fees/near-intents?dataType=dailyFees',
@@ -92,7 +92,7 @@ for m in sorted(set(r['date'][:7] for r in days)):
  for k in ['volume','fees','revenue']:
   if k in old and r[k] is not None and abs(r[k]-old[k])>max(1,old[k]*.00001):r['notes'].append(k+' differs from saved historical workbook; provider revision requires review')
  if not complete:r['notes'].append('Month in progress. Compare with the same elapsed UTC days in the previous month.')
- if r['mint'] is None:r['notes'].append('Issuance not yet extended beyond September; no current issuance coverage ratio calculated.')
+ if r['mint'] is None:r['notes'].append('Issuance and burns are unavailable for this monthly cutoff; no current issuance coverage ratio is calculated.')
  for x in rows:
   prev=[y['fees'] for y in days if y['date']<x['date'] and y['fees'] is not None][-7:]
   if prev and x['fees'] is not None and x['fees']<statistics.median(prev)*.1:r['notes'].append(x['date']+': fees below 10% of prior 7-record median; reporting or activity change needs review.')
@@ -113,7 +113,7 @@ meta={'retrievedAt':NOW.isoformat(),'through':days[-1]['date'],'timezone':'UTC',
 result={'meta':meta,'months':months,'daily':days};(OUT/'performance.json').write_text(json.dumps(result,indent=2,allow_nan=False))
 import refresh_supply
 supply_error=None
-if not cached:
+if not cached and not options.skip_supply:
  try:
   import refresh_supply_daily
   refresh_supply_daily.collect(START.date().isoformat(),END.date().isoformat())
@@ -122,7 +122,8 @@ if not cached:
 if (OUT/'supply-history.json').exists():
  refresh_supply.apply()
  result=json.loads((OUT/'performance.json').read_text())
-import build_cached_supply_daily
+if not options.skip_supply:
+ import build_cached_supply_daily
 result['meta']['errors']=errors
 (OUT/'performance.json').write_text(json.dumps(result,indent=2,allow_nan=False))
 print(json.dumps({'through':result['meta']['through'],'months':len(result['months']),'latest':result['months'][-1],'errors':errors},indent=2))

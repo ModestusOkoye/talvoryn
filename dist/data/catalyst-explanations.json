@@ -1,0 +1,58 @@
+{
+  "667": {
+    "updatedAt": "2026-11-11T00:19:47Z",
+    "title": "NEP-667: External Contract Calls",
+    "summary": "A draft would let a smart contract decide how to authorise a call and pay its execution cost, rather than requiring the caller to supply a normal NEAR account signature.",
+    "plain": "Today, using an app can require a wallet account and tokens for fees. This proposal explores letting the app\u2019s contract check the user\u2019s authorisation and pay instead. If adopted and integrated by apps, that could make onboarding easier. It does not establish extra revenue, lower issuance or a higher token price.",
+    "source": "https://github.com/near/NEPs/pull/667"
+  },
+  "649": {
+    "updatedAt": "2026-11-05T18:10:30Z",
+    "title": "NEP-649: Deterministic ML-DSA-65 Key Derivation from BIP-39 Seeds (SLIP-0010)",
+    "summary": "The proposal describes a common way for wallets to derive ML-DSA-65 keys from a recovery phrase. Its pull-request description links to the technical specification.",
+    "plain": "The idea is to make wallet software follow the same recipe when turning a recovery phrase into this type of key. The title and description do not establish adoption or an economic effect. The linked specification needs review before drawing more detailed conclusions.",
+    "source": "https://github.com/near/NEPs/pull/649"
+  },
+  "656": {
+    "updatedAt": "2026-11-04T20:43:10Z",
+    "title": "NEP-645: specify the ML-DSA-65 secret-key string encoding",
+    "summary": "An amendment proposes a consistent text format for ML-DSA-65 secret keys, addressing incompatibility between NEAR developer tools.",
+    "plain": "Different tools currently save the same kind of secret key in different forms, which can stop a key working when moved between tools. This amendment aims to make them agree on a preferred format while retaining support for existing keys. It concerns tooling compatibility, not a change to token issuance.",
+    "source": "https://github.com/near/NEPs/pull/656"
+  },
+  "666": {
+    "updatedAt": "2026-10-31T02:33:21Z",
+    "title": "NEP-666: Post-Quantum Signature Verification Interface",
+    "summary": "A proposed contract standard defines how smart contracts request verification of specified post-quantum signatures.",
+    "plain": "This is a shared interface for contracts to check certain signatures designed with future quantum-computing risks in mind. A common interface could make integrations more consistent. It does not mean all NEAR accounts have changed their security model, or that the proposal has been approved.",
+    "source": "https://github.com/near/NEPs/pull/666"
+  },
+  "665": {
+    "updatedAt": "2026-10-31T02:33:19Z",
+    "title": "NEP-665: Panic-Free Contention State for Contracts",
+    "summary": "A proposed contract standard describes how to represent conflicting evidence without crashing or simply overwriting earlier evidence.",
+    "plain": "Imagine two inputs disagreeing about whether something is true. This proposal gives a contract a defined way to store that disagreement instead of failing or accepting only the last input. Whether it helps a particular app depends on implementation; it does not imply a change to NEAR supply.",
+    "source": "https://github.com/near/NEPs/pull/665"
+  },
+  "664": {
+    "updatedAt": "2026-10-27T18:12:59Z",
+    "title": "NEP-635: specify that messages shorter than 16 bytes are rejected",
+    "summary": "A specification amendment would document the implementation\u2019s existing handling of messages shorter than 16 bytes.",
+    "plain": "This is about making the written rules match what the deployed code already does. The source says very short messages are rejected. It is not evidence of a newly activated protocol behaviour or a direct change to fees, buybacks or issuance.",
+    "source": "https://github.com/near/NEPs/pull/664"
+  },
+  "636": {
+    "updatedAt": "2026-10-06T11:22:11Z",
+    "title": "NEP-636: Sharded Fungible Token",
+    "summary": "A draft discusses a sharded fungible-token standard. The pull-request description says the proposal text is still a work in progress.",
+    "plain": "It concerns a proposed standard for tokens organised across shards. The short description does not establish the final design, performance gains or adoption. Read the linked discussion and implementation before inferring what it could change for users.",
+    "source": "https://github.com/near/NEPs/pull/636"
+  },
+  "654": {
+    "updatedAt": "2026-10-28T08:27:16Z",
+    "title": "NEP-641: non-normative clarifications from a second implementation",
+    "summary": "Clarifications to NEP-641 aim to remove ambiguity around timestamps, data encoding and signature-verification details identified by another implementation.",
+    "plain": "Two teams can read the same specification and still produce software that disagrees on edge cases. These clarifications try to make the expected behaviour more precise. They are presented as wording clarifications, not evidence of new transaction demand or a change to token economics.",
+    "source": "https://github.com/near/NEPs/pull/654"
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "mode": "dated_snapshot",
+  "workerDeployment": "blocked: authorised Cloudflare deployment connection unavailable",
+  "productionCron": "not activated or verified",
+  "activity": {
+    "volumeThrough": "2026-11-13",
+    "feesThrough": "2026-11-13",
+    "revenueThrough": "2026-11-13",
+    "retrievedAt": "2026-11-14T18:44:45.787862+00:00"
+  },
+  "buybacks": {
+    "through": "2026-11-13",
+    "retrievedAt": "2026-11-14T18:44:45.787862+00:00",
+    "paginationComplete": true
+  },
+  "prices": {
+    "near": "2026-11-14T00:00:00+00:00",
+    "btc": "2026-11-14T00:00:00+00:00",
+    "eth": "2026-11-14T00:00:00+00:00"
+  },
+  "monthlySupply": {
+    "throughExclusive": "2026-11-11",
+    "retrievedAt": "2026-11-11T16:49:11.144144+00:00"
+  },
+  "dailySupply": {
+    "from": "2026-04-01",
+    "toExclusive": "2026-11-11",
+    "status": "incomplete",
+    "reason": "Public archival RPC and block-data API returned HTTP 429. Authenticated archival access is required to finish daily coverage.",
+    "issuanceDays": 54,
+    "burnDays": 0,
+    "expectedDays": 224,
+    "sources": [
+      "https://archival-rpc.mainnet.fastnear.com",
+      "https://mainnet.neardata.xyz"
+    ],
+    "method": "Daily issuance from complete consecutive epoch coverage. Burns only where exact UTC boundary supply records are available. Null means missing; never monthly-average interpolation."
+  },
+  "finalSupplyObservation": {
+    "source": "https://rpc.mainnet.near.org",
+    "observedAt": "2026-11-14T18:49:30.845Z",
+    "checkedAt": "2026-11-14T18:49:32.942Z",
+    "block": "EGiqwP4vWcv5Fk1nwA7WSQDeYthMLZY6EGJRpZg6WoHt",
+    "height": 224554004,
+    "totalSupplyYocto": "1311701571651999859369133953354720"
+  },
+  "wallets": {
+    "checkedAt": "2026-11-14T18:49:38.566Z",
+    "through": "2026-11-14T03:46:45.770Z",
+    "coverage": null,
+    "sampleOnly": true
+  },
+  "integrators": {
+    "dataEndsAt": "2026-11-14",
+    "generatedAt": "2026-11-14T18:49:26.209Z"
+  },
+  "scheduledHandlerTest": {
+    "scope": "direct scheduled-handler invocation with live provider requests and disk SQLite adapter; not a deployed Cron run",
+    "executedAt": "2026-11-14T18:54:53.867Z",
+    "persistence": "passed"
+  }
+}

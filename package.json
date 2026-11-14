@@ -2,13 +2,17 @@
   "name": "talvoryn",
   "private": true,
   "version": "0.1.0",
-  "description": "Existing Talvoryn Site application source; historical datasets imported separately",
+  "description": "Talvoryn NEAR research dashboard with dated source records and an independently deployable data Worker",
   "engines": {
     "node": ">=22"
   },
   "scripts": {
-    "build": "python3 scripts/build_connected_site.py",
+    "build": "node --check worker/production.mjs",
     "dev": "python3 -m http.server 8080 --directory dist",
-    "test": "node --test tests/*.cjs tests/*.mjs"
+    "test": "node --test tests/chart-curves.test.cjs tests/research-model.test.cjs tests/exchange-flows.test.mjs tests/recovery/*.test.mjs",
+    "test:core": "node --test tests/chart-curves.test.cjs tests/research-model.test.cjs tests/exchange-flows.test.mjs tests/recovery/*.test.mjs",
+    "test:scheduled:live": "node scripts/test_scheduled_live.mjs",
+    "seed:worker": "node scripts/seed_worker.mjs",
+    "test:legacy": "node --test tests/*.cjs tests/*.mjs"
   }
 }
