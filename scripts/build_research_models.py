@@ -31,4 +31,6 @@ for key in keys:
  mae=lambda v:float(np.mean(np.abs(np.array(actual)-v)))
  m=fit([r['x']for r in pairs],[r['y']for r in pairs]);m.update({'marketOnlyModel':fit([[r['x'][0]]for r in pairs],[r['y']for r in pairs]),'pairs':len(pairs),'holdouts':len(actual),'mae':mae(full),'marketOnlyMAE':mae(market),'flatPriceMAE':mae(np.zeros(len(actual))),'residuals':res,'marketOnlyResiduals':market_res,'validatedForecast':False,'status':'conditional_scenario','note':'Fitted activity association is exploratory. Holdouts condition on realized activity and BTC; they do not validate an unconditional forecast. Range uses resampled centered weekly holdout errors, not a calibrated confidence interval.'});out['models'][key]=m
  print(key,'weeks',len(pairs),'holdouts',len(actual),'MAE',round(m['mae'],4),'market',round(m['marketOnlyMAE'],4),'flat',round(m['flatPriceMAE'],4),'coeff',m['coefficients'])
-# Record the UTC build time only after every model has been fitted successfully.\nout['meta']['rebuiltAt']=datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds').replace('+00:00','Z')\nPath('dist/data/research-models.json').write_text(json.dumps(out,indent=2))
+# Record the UTC build time only after every model has been fitted successfully.
+out['meta']['rebuiltAt']=datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds').replace('+00:00','Z')
+Path('dist/data/research-models.json').write_text(json.dumps(out,indent=2))
