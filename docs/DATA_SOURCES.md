@@ -18,3 +18,7 @@ These are implemented policies in the independent Worker, not a claim that Cloud
 `dist/data/source-status.json` records the captured timestamps from this recovery. Source cutoffs differ. Data files expose dates rather than relabelling the whole dashboard as live. Provider revisions may change historical activity; immutable stored revisions preserve the previous dataset. Source errors retain the last verified payload and update health separately.
 
 Buyback amounts do not prove trading execution prices. The final-block supply job cannot fill missing gross issuance or burns. Some archival RPC endpoints return 429; existing evidence is retained, and incomplete daily history stays null. Wallet coverage is sampled, not a network-wide holder ranking. Integrator identity mappings belong to the provider.
+
+## Deferred follow-up
+
+- Investigate the whale activity refresh: the public Data Freshness table currently reports no successful-check timestamp or observation cutoff for the three-hour whale job. Check Cron execution, job health, verified roster, rate limits and per-wallet coverage before changing the published readings. Do not substitute saved snapshot dates for successful live job status.
