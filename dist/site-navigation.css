@@ -25,3 +25,23 @@ header nav.talvoryn-nav .mobile-menu-toggle{display:none;border:1px solid #dae3e
 }
 @media(min-width:951px){header nav.talvoryn-nav .drawer-actions{display:none}}
 @media(max-width:390px){header nav.talvoryn-nav .talvoryn-brand{width:130px;flex-basis:130px}header nav.talvoryn-nav .talvoryn-brand svg{width:130px}}
+
+/* Stable desktop placement: overrides older header rules without wrapping. */
+@media(min-width:951px){
+ header nav.talvoryn-nav,body.research-page header nav.talvoryn-nav{display:flex!important;align-items:center!important;justify-content:flex-start!important;flex-wrap:nowrap!important;gap:18px!important;height:72px!important;min-height:72px!important;padding:9px 28px!important}
+ header nav.talvoryn-nav>.talvoryn-brand{flex:0 0 194px!important;margin:0!important;width:194px!important}
+ header nav.talvoryn-nav>.primary-links{display:flex!important;position:static!important;flex:0 1 auto!important;gap:3px!important;margin:0!important;min-width:0!important}
+ header nav.talvoryn-nav>.header-coming-soon{display:flex!important;position:static!important;flex:0 0 auto!important;margin-left:auto!important;min-width:0!important;justify-content:flex-end!important}
+ header nav.talvoryn-nav>.mobile-menu-toggle{display:none!important}
+}
+@media(max-width:950px){
+ header nav.talvoryn-nav>.primary-links:not(.is-open){display:none!important}
+ header nav.talvoryn-nav>.primary-links.is-open{display:flex!important}
+ header nav.talvoryn-nav>.header-coming-soon{display:none!important}
+ header nav.talvoryn-nav>.mobile-menu-toggle{display:inline-flex!important}
+}
+/* Subtle living refresh symbol, without implying a refresh is in progress. */
+@keyframes talvoryn-refresh-idle{0%,75%{transform:rotate(0deg)}92%,100%{transform:rotate(360deg)}}
+#railRefresh{display:inline-flex;align-items:center;justify-content:center;transform-origin:center;animation:talvoryn-refresh-idle 9s ease-in-out infinite;will-change:transform}
+#railRefresh:hover,#railRefresh:focus-visible{animation-duration:2s}
+@media(prefers-reduced-motion:reduce){#railRefresh{animation:none!important}}
