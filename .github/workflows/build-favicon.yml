@@ -18,29 +18,15 @@ jobs:
           python - <<'PY'
           from PIL import Image
           image=Image.open('dist/talvoryn-logo-transparent.png').convert('RGBA')
-          bb=image.getbbox()
-          if not bb: raise ValueError('Logo is transparent')
-          original=image.crop(bb)
-          w,h=original.size
-          # The T icon is the left-hand standalone element of the horizontal wordmark.
-          # Find its separation from the lettering using the lowest non-transparent column count.
-          a=original.getchannel('A')
-          column=[sum(1 for y in range(h) if a.getpixel((x,y))>35) for x in range(w)]
-          occupied=[x for x,c in enumerate(column) if c>2]
-          # Search the early 8–40% of the wordmark for the gap after the brand icon.
-          lo=int(w*.08);hi=int(w*.40)
-          runs=[]; start=None
-          for x in range(lo,hi):
-            if column[x]==0:
-              if start is None:start=x
-            elif start is not None:
-              runs.append((start,x));start=None
-          if start is not None:runs.append((start,hi))
-          gaps=[(b-a,a,b) for a,b in runs if b-a>=max(5,int(w*.008))]
-          end=max(gaps)[1] if gaps else int(w*.20)
-          # Crop the first icon, then fit within a square transparent background.
-          mark=original.crop((0,0,end,h))
+          if not (2.8 < image.width/image.height < 3.2):
+            raise ValueError(f'Unexpected logo dimensions: {image.size}')
+          # Original artwork: complete T mark fills the LEFT THIRD of the horizontal wordmark.
+          # Prior gap detection cut through the two halves of the T itself.
+          # Crop by the measured icon/letter boundary (approx x=725 of 2172), not a gap within the mark.
+          end=round(image.width/3)
+          mark=image.crop((0,0,end,image.height))
           mark=mark.crop(mark.getbbox())
+          if not mark: raise ValueError('Empty T mark')
           mw,mh=mark.size
           side=512; inset=32
           scale=min((side-2*inset)/mw,(side-2*inset)/mh)
@@ -55,4 +41,4 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add dist/favicon.png
-          git diff --cached --quiet || (git commit -m "Add original Talvoryn T favicon" && git push)
+          git diff --cached --quiet || (git commit -m "Correct complete Talvoryn T favicon" && git push)
