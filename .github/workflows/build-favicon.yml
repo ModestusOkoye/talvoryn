@@ -1,0 +1,58 @@
+name: Build Talvoryn T favicon
+on:
+  push:
+    paths:
+      - .github/workflows/build-favicon.yml
+      - dist/talvoryn-logo-transparent.png
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  favicon:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract the original T brand mark
+        run: |
+          python -m pip install --quiet Pillow
+          python - <<'PY'
+          from PIL import Image
+          image=Image.open('dist/talvoryn-logo-transparent.png').convert('RGBA')
+          bb=image.getbbox()
+          if not bb: raise ValueError('Logo is transparent')
+          original=image.crop(bb)
+          w,h=original.size
+          # The T icon is the left-hand standalone element of the horizontal wordmark.
+          # Find its separation from the lettering using the lowest non-transparent column count.
+          a=original.getchannel('A')
+          column=[sum(1 for y in range(h) if a.getpixel((x,y))>35) for x in range(w)]
+          occupied=[x for x,c in enumerate(column) if c>2]
+          # Search the early 8–40% of the wordmark for the gap after the brand icon.
+          lo=int(w*.08);hi=int(w*.40)
+          runs=[]; start=None
+          for x in range(lo,hi):
+            if column[x]==0:
+              if start is None:start=x
+            elif start is not None:
+              runs.append((start,x));start=None
+          if start is not None:runs.append((start,hi))
+          gaps=[(b-a,a,b) for a,b in runs if b-a>=max(5,int(w*.008))]
+          end=max(gaps)[1] if gaps else int(w*.20)
+          # Crop the first icon, then fit within a square transparent background.
+          mark=original.crop((0,0,end,h))
+          mark=mark.crop(mark.getbbox())
+          mw,mh=mark.size
+          side=512; inset=32
+          scale=min((side-2*inset)/mw,(side-2*inset)/mh)
+          mark=mark.resize((max(1,round(mw*scale)),max(1,round(mh*scale))),Image.Resampling.LANCZOS)
+          result=Image.new('RGBA',(side,side),(0,0,0,0))
+          result.alpha_composite(mark,((side-mark.width)//2,(side-mark.height)//2))
+          result.save('dist/favicon.png')
+          print(f'Original {image.size}; trimmed {original.size}; favicon mark {mw}x{mh}; split {end}; saved 512x512')
+          PY
+      - name: Commit favicon
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dist/favicon.png
+          git diff --cached --quiet || (git commit -m "Add original Talvoryn T favicon" && git push)
