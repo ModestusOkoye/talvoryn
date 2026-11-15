@@ -24,7 +24,7 @@ New candidates are stored in D1 as `catalyst-discovery` and **never auto-publish
 - **Shipped** — an implementation or launch is supported by **additional** evidence beyond the original announcement.
 - **Measured** — an actual adoption/economic observation is linked, with the source and period disclosed.
 
-The protected `POST /api/admin/catalyst-review` requires `OWNER_API_TOKEN`, a candidate `id`, `decision` (`approve` or `reject`) and, for approvals, a `stage`, `summary`, `effect`, `next`, `evidenceURL` and optional `affects`, `kind` and `metricSource`. A `Measured` label requires `metricSource`; a `Shipped` or `Measured` label cannot rely only on the original announcement URL. An approval publishes a human-written, source-linked article to D1; rejection removes the candidate.
+The protected `POST /api/admin/catalyst-review` requires `OWNER_API_TOKEN`, a candidate `id`, `decision` (`approve` or `reject`) and, for approvals, a `stage`, verified `eventDate` (`YYYY-MM-DD`), `summary`, `effect`, `next`, `evidenceURL` and optional `affects`, `kind` and `metricSource`. A `Measured` label requires `metricSource`; a `Shipped` or `Measured` label cannot rely only on the original announcement URL. An approval publishes a human-written, source-linked article to D1; rejection removes the candidate.
 
 Keep the owner token in Cloudflare secret storage. Do not send it through the public website or commit it to GitHub. The private candidate queue is available at `GET /api/admin/catalyst-candidates` with the same bearer token.
 
