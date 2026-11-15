@@ -12,6 +12,28 @@ function renderProjects(item){
  const link=document.createElement('a');link.href='https://nearhackathon.com/#projects';link.target='_blank';link.rel='noopener noreferrer';link.textContent='Explore all submitted projects ↗';
  box.append(title,copy,link);$('catalystSource').parentElement.before(box);
 }
-function render(){const railLink=rail?document.querySelector('.catalyst-rail .rail-all'):null;parent.replaceChildren();const selected=items.filter(i=>mode==='all'||i.kind===mode).sort((a,b)=>b.date.localeCompare(a.date));const size=10,pages=Math.max(1,Math.ceil(selected.length/size));page=Math.min(page,pages);for(const item of selected.slice((page-1)*size,page*size)){const button=document.createElement('button');button.type='button';button.className=rail?'rail-item':'economic-item';const title=document.createElement('span');title.className='economic-title';title.textContent=item.title;button.append(title);button.dataset.kind=item.kind;button.onclick=()=>detail(item);parent.append(button)}if(!selected.length){const empty=document.createElement('p');empty.className='quiet';empty.textContent='No reviewed catalysts in this category.';parent.append(empty)}let pager=$(rail?'railPages':'feedPages');if(!pager){pager=document.createElement('nav');pager.id=rail?'railPages':'feedPages';pager.className='catalyst-pages';pager.setAttribute('aria-label','Catalyst pages');parent.after(pager)}pager.replaceChildren();if(pages>1){for(let n=Math.max(1,page-2);n<=Math.min(pages,page+2);n++){const b=document.createElement('button');b.textContent=n;b.type='button';b.setAttribute('aria-label','Page '+n);if(n===page)b.setAttribute('aria-current','page');b.onclick=()=>{page=n;render()};pager.append(b)}}if(railLink)pager.append(railLink)}
-async function refresh(){if(busy)return;busy=true;refreshButton.disabled=true;try{const r=await fetch('/api/catalysts',{cache:'no-store'});if(!r.ok)throw Error();const d=await r.json();items=(d.items||[]).filter(valid);render();status.textContent=''}catch{status.textContent='Catalyst update unavailable';if(!items.length)render()}finally{busy=false;refreshButton.disabled=false}}
+function render(){const railLink=rail?document.querySelector('.catalyst-rail .rail-all'):null;parent.replaceChildren();const selected=items.filter(i=>mode==='all'||i.kind===mode).sort((a,b)=>b.date.localeCompare(a.date));const size=10,pages=Math.max(1,Math.ceil(selected.length/size));page=Math.min(page,pages);for(const item of selected.slice((page-1)*size,page*size)){const button=document.createElement('button');button.type='button';button.className=rail?'rail-item':'economic-item';const title=document.createElement('span');title.className='economic-title';title.textContent=item.title;button.append(title);if(!rail){const meta=document.createElement('small');meta.className='economic-meta';meta.textContent=item.date+' · '+item.status;button.append(meta)}button.dataset.kind=item.kind;button.onclick=()=>detail(item);parent.append(button)}if(!selected.length){const empty=document.createElement('p');empty.className='quiet';empty.textContent='No reviewed catalysts in this category.';parent.append(empty)}let pager=$(rail?'railPages':'feedPages');if(!pager){pager=document.createElement('nav');pager.id=rail?'railPages':'feedPages';pager.className='catalyst-pages';pager.setAttribute('aria-label','Catalyst pages');parent.after(pager)}pager.replaceChildren();if(pages>1){for(let n=Math.max(1,page-2);n<=Math.min(pages,page+2);n++){const b=document.createElement('button');b.textContent=n;b.type='button';b.setAttribute('aria-label','Page '+n);if(n===page)b.setAttribute('aria-current','page');b.onclick=()=>{page=n;render()};pager.append(b)}}if(railLink)pager.append(railLink)}
+async function refresh(){
+ if(busy)return;busy=true;refreshButton.disabled=true;
+ try{
+   const responses=await Promise.allSettled([
+     fetch('./data/economic-catalysts.json',{cache:'no-cache'}).then(r=>{if(!r.ok)throw Error('Saved catalyst feed unavailable');return r.json()}),
+     fetch('/api/catalysts',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Live catalyst feed unavailable');return r.json()})
+   ]);
+   const saved=responses[0].status==='fulfilled'?(responses[0].value.items||[]).filter(valid):[];
+   const live=responses[1].status==='fulfilled'?(responses[1].value.items||[]).filter(valid):[];
+   if(!saved.length&&!live.length)throw Error('No available catalysts');
+   const merged=new Map(live.map(item=>[item.id,item]));
+   // A more recently verified editorial update replaces a stale item of the same ID.
+   for(const item of saved){
+     const prior=merged.get(item.id);
+     if(!prior||item.checkedAt>=prior.checkedAt)merged.set(item.id,item);
+   }
+   items=[...merged.values()];
+   render();
+   status.textContent=live.length?'Verified sources · published and live records':'Verified sources · saved records';
+ }catch{
+   status.textContent='Catalyst update unavailable';if(!items.length)render();
+ }finally{busy=false;refreshButton.disabled=false}
+}
 refreshButton.onclick=refresh;document.querySelectorAll('[data-feed]').forEach(b=>b.onclick=()=>{mode=b.dataset.feed;page=1;document.querySelectorAll('[data-feed]').forEach(x=>{const on=x===b;x.classList.toggle('on',on);x.setAttribute('aria-pressed',String(on))});render()});$('closeCatalyst').onclick=()=>$('catalystDetail').close();$('catalystDetail').onclick=e=>{if(e.target===$('catalystDetail'))$('catalystDetail').close()};refresh();setInterval(()=>{if(!document.hidden)refresh()},60000);})();
