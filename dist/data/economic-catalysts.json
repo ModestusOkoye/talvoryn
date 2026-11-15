@@ -1,5 +1,5 @@
 {
-  "reviewedAt": "2026-11-13",
+  "reviewedAt": "2026-11-15",
   "items": [
     {
       "id": "hsp029",
@@ -7,7 +7,7 @@
       "title": "NEAR proposes lower inflation",
       "date": "2026-10-07",
       "checkedAt": "2026-11-13",
-      "status": "Vote passed \u00b7 activation not verified",
+      "status": "Vote passed · activation not verified",
       "affects": [
         "Supply"
       ],
@@ -33,6 +33,89 @@
       "next": "Watch monthly revenue and recorded buybacks to see whether the effect grows.",
       "url": "https://near.org/blog/evolving-near-tokenomics",
       "simulation": "intents-fees"
+    },
+    {
+      "id": "near-hackathon-2026",
+      "kind": "news",
+      "title": "NEAR Hackathon 2026: explore public project submissions",
+      "date": "2026-11-14",
+      "checkedAt": "2026-11-15",
+      "status": "Submission period ended · public directory available",
+      "affects": [
+        "Ecosystem",
+        "Builders"
+      ],
+      "summary": "NEAR Hackathon ran 1–14 November 2026. The public directory collects submitted prototypes across 13 tracks, including Investment Thesis, DeFi, privacy and the agent economy.",
+      "effect": "Builder participation shows experimentation and breadth of ideas, but submissions are not evidence of product adoption, mainnet launch or token demand.",
+      "next": "Browse the complete official project directory. During judging, distinguish demos from shipped products and track projects that report independent adoption.",
+      "url": "https://nearhackathon.com/#projects"
+    },
+    {
+      "id": "talos-intents-oems-2026",
+      "kind": "news",
+      "title": "NEAR Intents goes live inside Talos institutional trading workflow",
+      "date": "2026-11-09",
+      "checkedAt": "2026-11-15",
+      "status": "Integration announced live",
+      "affects": [
+        "Adoption",
+        "Intents",
+        "Revenue"
+      ],
+      "summary": "NEAR says Talos's order and execution management system now supports access to NEAR Intents cross-chain DeFi liquidity using existing trading desk workflows.",
+      "effect": "The integration may make solver-sourced cross-chain liquidity easier for institutions to access. Announcement of availability alone does not establish volume or token demand.",
+      "next": "Look for independently measurable Talos-routed volume, active institutional usage and changes in Intents fees and revenue.",
+      "url": "https://near.org/blog/near-intents-live-in-talos-oems"
+    },
+    {
+      "id": "pearl-confidential-trading-2026",
+      "kind": "news",
+      "title": "near.com adds confidential PEARL trading",
+      "date": "2026-11-03",
+      "checkedAt": "2026-11-15",
+      "status": "Trading feature announced live",
+      "affects": [
+        "AI",
+        "Privacy",
+        "Intents"
+      ],
+      "summary": "NEAR announced that PEARL, an asset associated with AI compute workloads, can be traded confidentially through near.com using NEAR Intents.",
+      "effect": "This adds a use case connecting AI-compute assets with cross-chain liquidity, but its contribution to adoption and fee generation is not yet established here.",
+      "next": "Track supported trading pairs, verified PEARL activity and measurable contribution to Intents volume and revenue.",
+      "url": "https://near.org/blog/trade-pearl-on-near-com"
+    },
+    {
+      "id": "chain-signatures-tee-2026",
+      "kind": "news",
+      "title": "Chain Signatures operations move into trusted execution environments",
+      "date": "2026-10-23",
+      "checkedAt": "2026-11-15",
+      "status": "Security milestone announced implemented",
+      "affects": [
+        "Security",
+        "Chain Abstraction"
+      ],
+      "summary": "NEAR reports that Chain Signatures operations now run inside trusted execution environments, with verification of MPC activity recorded on-chain.",
+      "effect": "The change may strengthen verifiability and confidence in cross-chain infrastructure. It is not direct proof of adoption or additional revenue.",
+      "next": "Review independent implementation evidence, operational reliability and any developer or integrator uptake.",
+      "url": "https://www.near.org/blog/chain-signatures-tee"
+    },
+    {
+      "id": "sovereign-yield-draft-2026",
+      "kind": "proposals",
+      "title": "Draft proposes a NEAR Intents treasury-backed yield model",
+      "date": "2026-11-08",
+      "checkedAt": "2026-11-15",
+      "status": "Draft proposal · not approved",
+      "affects": [
+        "Governance",
+        "Revenue",
+        "Buybacks"
+      ],
+      "summary": "A draft House of Stake discussion proposes redirecting a percentage of NEAR Intents protocol fees into short-term U.S. Treasury Bills, with yield funding ecosystem startups.",
+      "effect": "If adopted, allocation rules could affect how fee revenue contributes to buybacks and other uses. The draft has no verified implementation here.",
+      "next": "Watch for a formal proposal number, revisions, approval and any published changes to revenue allocation.",
+      "url": "https://gov.near.org/t/hsp-xxx-sovereign-yield-engine-treasury-backed-venture-protocol-buyback-model-for-near-intents/42760"
     }
   ]
 }
