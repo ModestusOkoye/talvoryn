@@ -1,7 +1,21 @@
 (()=>{'use strict';const $=id=>document.getElementById(id),date=s=>new Date(s+'T00:00:00Z').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});let items=[],mode='all',busy=false,page=1;const rail=!!$('railItems'),parent=$(rail?'railItems':'newsFeed'),status=$(rail?'railStatus':'feedStatus'),refreshButton=$(rail?'railRefresh':'refreshFeed');
 function valid(item){try{const u=new URL(item.url);return ['https://gov.near.org','https://near.org','https://www.near.org','https://github.com','https://x.com','https://nearblocks.io','https://defillama.com','https://nearhackathon.com','https://near.ai'].includes(u.origin)&&['proposals','news','github','onchain','data'].includes(item.kind)&&Array.isArray(item.affects)&&item.affects.length&&['title','summary','effect','next','date','checkedAt','status'].every(k=>typeof item[k]==='string'&&item[k].length)}catch{return false}}
 function simulation(item){return item.simulation==='hsp029'?'./research.html?catalyst=hsp029#offset':item.simulation==='intents-fees'?'./research.html?catalyst=intents-fees#revenue':null}
-function detail(item){$('catalystTitle').textContent=item.title;$('catalystSummary').textContent=item.summary;$('catalystEffect').textContent=item.effect;$('catalystNext').textContent=item.next;$('catalystSource').href=item.url;const sim=simulation(item);$('catalystSimulate').hidden=!sim;if(sim)$('catalystSimulate').href=sim;renderProjects(item);$('catalystDetail').showModal()}
+function detail(item){$('catalystTitle').textContent=item.title;$('catalystSummary').textContent=item.summary;$('catalystEffect').textContent=item.effect;$('catalystNext').textContent=item.next;$('catalystSource').href=item.url;const sim=simulation(item);$('catalystSimulate').hidden=!sim;if(sim)$('catalystSimulate').href=sim;renderProjects(item);
+ document.getElementById('impactEvidence')?.remove();
+ if(item.impact?.compare){
+  const section=document.createElement('section');section.id='impactEvidence';
+  const head=document.createElement('h3');head.textContent='Economic observations around this development';section.append(head);
+  const time=document.createElement('p');time.textContent='7 full UTC days before ('+item.impact.before.from+'–'+item.impact.before.through+') compared with 7 after ('+item.impact.after.from+'–'+item.impact.after.through+')';section.append(time);
+  for(const [name,label]of [['volume','Intents volume'],['fees','Fees'],['revenue','Revenue']]){
+   const metric=item.impact.compare[name];if(!metric)continue;
+   const p=document.createElement('p');const change=Number.isFinite(metric.changePct)?(metric.changePct>=0?'+':'')+metric.changePct.toFixed(1)+'%':'not comparable';
+   p.textContent=label+': '+change+' · descriptive comparison, not attributable impact';section.append(p);
+  }
+  const caveat=document.createElement('small');caveat.textContent=item.impact.caveat;section.append(caveat);
+  $('catalystSource').parentElement.before(section);
+ }
+ $('catalystDetail').showModal()}
 const trackNames={defi:'Unstoppable DeFi',thesis:'Investment Thesis',privacy:'Privacy & Private AI',business:'Autonomous Business',swarms:'AI Swarms',security:'AI Security & Defense',agents:'Agent Economy',money:'Real-World Money',games:'Games With Real Economies',nfts:'NFTs That Do Something',memecoins:'Memecoins With Mechanics',social:'Social Money',open:'Open Innovation'};
 function renderProjects(item){
  document.getElementById('eventProjects')?.remove();
