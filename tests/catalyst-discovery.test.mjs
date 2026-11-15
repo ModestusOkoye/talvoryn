@@ -4,7 +4,7 @@ import {discoverCatalysts,extractBlogLinks,extractHackathonCount} from '../worke
 assert.equal(extractHackathonCount('<span>1–8 OF 2,438 PROJECTS</span>'),2438);
 assert.equal(extractHackathonCount('unavailable'),null);
 assert.equal(extractHackathonCount('1–8 OF 2,438 PROJECTS and 1–8 OF 2,439 PROJECTS'),null);
-assert.equal(extractBlogLinks('<a href="/blog/near-intents-launch">NEAR Intents launches institutional access</a>').length,1);
+assert.equal(extractBlogLinks('<a href="/blog/near-intents-launch"><img alt="NEAR Intents launches institutional access"></a>').length,1);
 
 const original=globalThis.fetch,calls=[];
 try {
@@ -17,7 +17,7 @@ try {
    {number:22,title:'Protocol fee adjustment',updated_at:'2026-11-14T19:00:00Z',html_url:'https://github.com/near/NEPs/pull/22'},
    {number:23,title:'Improve format',updated_at:'2026-11-14T19:00:00Z',html_url:'https://github.com/near/NEPs/pull/23'}]);
   if(String(url).includes('nearhackathon.com'))return new Response('<span>1–8 OF 2,438 PROJECTS</span>');
-  if(String(url).includes('near.org/blog'))return new Response('<a href="/blog/near-intents-launch">NEAR Intents launches institutional access</a>');
+  if(String(url).includes('near.org/blog'))return new Response('<a href="/blog/near-intents-launch"><img alt="NEAR Intents launches institutional access"></a>');
   throw Error('Unexpected URL');
  };
  const first=await discoverCatalysts();
