@@ -1,0 +1,27 @@
+name: Catalyst pipeline tests
+on:
+  push:
+    paths:
+      - 'worker/catalyst-*.mjs'
+      - 'worker/production.mjs'
+      - 'tests/catalyst-*.test.mjs'
+      - '.github/workflows/test-catalysts.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax-check runtime
+        run: |
+          node --check worker/production.mjs
+          node --check worker/catalyst-discovery.mjs
+          node --check worker/catalyst-review.mjs
+          node --check dist/economic-catalysts.js
+      - name: Test discovery, review and source gating
+        run: node --test tests/catalyst-discovery.test.mjs tests/catalyst-review.test.mjs
