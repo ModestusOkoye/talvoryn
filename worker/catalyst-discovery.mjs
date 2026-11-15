@@ -18,11 +18,16 @@ export function extractHackathonCount(html){
  return unique.length===1&&unique[0]>=0&&unique[0]<1000000?unique[0]:null;
 }
 export function extractBlogLinks(html){
- const found=new Map();
- for(const m of String(html).matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]{0,900}?)<\/a>/gi)){
+ const found=new Map(),raw=String(html);
+ // NEAR's blog has deeply nested announcement cards; do not assume the <a> ends in 900 chars.
+ for(const m of raw.matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>/gi)){
    let u;try{u=new URL(m[1],'https://www.near.org');}catch{continue}
    if(!['near.org','www.near.org'].includes(u.hostname)||!/^\/blog\/[a-z0-9-]+\/?$/i.test(u.pathname))continue;
-   const title=clean(m[2]);if(title.length<15||title.length>220||!matchTopic.test(title))continue;
+   const block=raw.slice(m.index,m.index+3200);
+   const alt=block.match(/<img\b[^>]*\balt=["']([^"']+)["']/i)?.[1];
+   const heading=block.match(/<h3\b[^>]*>([\s\S]*?)<\/h3>/i)?.[1];
+   const title=clean(alt||heading||'');
+   if(title.length<15||title.length>220||!matchTopic.test(title))continue;
    const url='https://www.near.org'+u.pathname.replace(/\/$/,'');
    found.set(url,{id:'near-blog:'+u.pathname.replace(/\/$/,'').split('/').at(-1),title,url,source:'NEAR official blog',status:'Announced — confirm implementation',observedAt:now(),type:'announcement'});
  }
