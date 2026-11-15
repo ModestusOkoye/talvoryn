@@ -1,6 +1,7 @@
 import {read,write,status,health} from './storage.mjs';
 import {collectWhaleHistory} from './whales.mjs';
 import {discoverCatalysts} from './catalyst-discovery.mjs';
+import {reviewCatalyst} from './catalyst-review.mjs';
 const DAY=86400000,START='2026-04-01',iso=t=>new Date(t).toISOString().slice(0,10),finite=Number.isFinite;
 const endpoints={volume:'https://api.llama.fi/summary/dexs/near-intents?excludeTotalDataChart=false&excludeTotalDataChartBreakdown=true',fees:'https://api.llama.fi/summary/fees/near-intents?dataType=dailyFees',revenue:'https://api.llama.fi/summary/fees/near-intents?dataType=dailyRevenue'};
 const publicFiles=new Set(['performance','supply-history','supply-daily','research-models','near-raw','btc-raw','eth-raw','economic-catalysts','catalysts','catalyst-explanations','altcoin-total','integrators-data','supply-head']);
@@ -32,4 +33,21 @@ if(u.pathname==='/api/admin/catalyst-candidates'){
  const data=await read(env.DB,'catalyst-discovery');
  return reply(data||{pending:[],lastCheckedAt:null,sources:{}});
 }
-if(req.method==='GET'&&u.pathname==='/data/source-status.json')return reply({mode:'dynamic',jobs:await health(env.DB),monthlySupply:(await read(env.DB,'supply-history'))?.meta,finalSupplyObservation:await read(env.DB,'supply-head')});if(req.method==='GET'&&(publicFiles.has(name)||u.pathname==='/api/whales'||u.pathname==='/api/catalysts')){const key=u.pathname==='/api/whales'?'whales':u.pathname==='/api/catalysts'?'economic-catalysts':name,d=await read(env.DB,key);return d?reply(d):reply({error:'Verified dataset unavailable',dataset:key},503)}if(u.pathname.startsWith('/api/admin/')){if(!env.OWNER_API_TOKEN||req.headers.get('Authorization')!=='Bearer '+env.OWNER_API_TOKEN)return reply({error:'Unauthorized'},401);if(req.method!=='POST')return reply({error:'Use POST'},405);if(u.pathname==='/api/admin/refresh')return reply(await runScheduled(env));if(!u.pathname.startsWith('/api/admin/import/')||!new Set([...publicFiles,'buybacks','whales']).has(name))return reply({error:'Unknown import dataset'},404);const text=await req.text();if(new TextEncoder().encode(text).length>1900000)return reply({error:'Import too large'},413);const d=JSON.parse(text);if(name==='performance'&&(!Array.isArray(d.daily)||!Array.isArray(d.months)||!d.meta?.through))return reply({error:'Invalid performance shape'},400);if(name==='whales'&&!Array.isArray(d.roster))return reply({error:'Verified roster required'},400);return reply({hash:await write(env.DB,name,d,d.meta?.through||d.through||null)})}return reply({error:'Not found'},404)}catch(e){return reply({error:'Data request failed; inspect source health'},503)}}};
+if(req.method==='GET'&&u.pathname==='/data/source-status.json')return reply({mode:'dynamic',jobs:await health(env.DB),monthlySupply:(await read(env.DB,'supply-history'))?.meta,finalSupplyObservation:await read(env.DB,'supply-head')});if(req.method==='GET'&&(publicFiles.has(name)||u.pathname==='/api/whales'||u.pathname==='/api/catalysts')){const key=u.pathname==='/api/whales'?'whales':u.pathname==='/api/catalysts'?'economic-catalysts':name,d=await read(env.DB,key);return d?reply(d):reply({error:'Verified dataset unavailable',dataset:key},503)}if(u.pathname.startsWith('/api/admin/')){if(!env.OWNER_API_TOKEN||req.headers.get('Authorization')!=='Bearer '+env.OWNER_API_TOKEN)return reply({error:'Unauthorized'},401);if(req.method!=='POST')return reply({error:'Use POST'},405);if(u.pathname==='/api/admin/catalyst-review'){
+ const raw=await req.text();if(raw.length>9000)return reply({error:'Review input too large'},413);
+ let input;try{input=JSON.parse(raw)}catch{return reply({error:'Invalid review JSON'},400)}
+ const discovered=await read(env.DB,'catalyst-discovery');
+ const candidate=discovered?.pending?.find(x=>x.id===input.id);
+ let decision;try{decision=reviewCatalyst(candidate,input)}catch(e){return reply({error:e.message},400)}
+ if(decision.decision==='approve'){
+   const prior=await read(env.DB,'economic-catalysts')||{items:[]};
+   const items=Array.isArray(prior.items)?prior.items:[];
+   const index=items.findIndex(x=>x.id===decision.id);
+   if(index===-1)items.unshift(decision.record);else items[index]=decision.record;
+   await write(env.DB,'economic-catalysts',{...prior,items,reviewedAt:decision.reviewedAt.slice(0,10),updatedAt:decision.reviewedAt});
+ }
+ const reviewedIds=[...new Set([...(discovered.reviewedIds||[]),decision.id])].slice(-500);
+ await write(env.DB,'catalyst-discovery',{...discovered,reviewedIds,pending:discovered.pending.filter(x=>x.id!==decision.id)},discovered.lastCheckedAt);
+ return reply({id:decision.id,decision:decision.decision,stage:decision.record?.stage||null,reviewedAt:decision.reviewedAt});
+}
+if(u.pathname==='/api/admin/refresh')return reply(await runScheduled(env));if(!u.pathname.startsWith('/api/admin/import/')||!new Set([...publicFiles,'buybacks','whales']).has(name))return reply({error:'Unknown import dataset'},404);const text=await req.text();if(new TextEncoder().encode(text).length>1900000)return reply({error:'Import too large'},413);const d=JSON.parse(text);if(name==='performance'&&(!Array.isArray(d.daily)||!Array.isArray(d.months)||!d.meta?.through))return reply({error:'Invalid performance shape'},400);if(name==='whales'&&!Array.isArray(d.roster))return reply({error:'Verified roster required'},400);return reply({hash:await write(env.DB,name,d,d.meta?.through||d.through||null)})}return reply({error:'Not found'},404)}catch(e){return reply({error:'Data request failed; inspect source health'},503)}}};
