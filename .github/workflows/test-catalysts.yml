@@ -22,6 +22,7 @@ jobs:
           node --check worker/production.mjs
           node --check worker/catalyst-discovery.mjs
           node --check worker/catalyst-review.mjs
+          node --check worker/catalyst-impact.mjs
           node --check dist/economic-catalysts.js
       - name: Test discovery, review and source gating
-        run: node --test tests/catalyst-discovery.test.mjs tests/catalyst-review.test.mjs
+        run: node --test tests/catalyst-discovery.test.mjs tests/catalyst-review.test.mjs tests/catalyst-impact.test.mjs
