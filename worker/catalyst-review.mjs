@@ -8,6 +8,8 @@ export function reviewCatalyst(candidate,request,at=new Date().toISOString()){
  if(!request||!['approve','reject'].includes(request.decision))throw Error('Invalid review decision');
  if(request.decision==='reject')return {decision:'reject',id:candidate.id,reviewedAt:at,reason:clean(request.reason).slice(0,500)||'Not material'};
  const stage=clean(request.stage);if(!stages.has(stage))throw Error('Stage must be Proposed, Announced, Shipped or Measured');
+ const eventDate=clean(request.eventDate);
+ if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(eventDate)||!Number.isFinite(Date.parse(eventDate+'T00:00:00Z'))||eventDate>at.slice(0,10))throw Error('Verified actual eventDate (YYYY-MM-DD) required');
  const summary=clean(request.summary),effect=clean(request.effect),next=clean(request.next),evidenceURL=clean(request.evidenceURL);
  if([summary,effect,next].some(x=>x.length<25||x.length>1000))throw Error('Source-based summary, effect and what-to-watch required (25–1000 chars each)');
  let evidence;try{evidence=new URL(evidenceURL);if(evidence.protocol!=='https:'||!approvedHosts.has(evidence.hostname))throw Error('Unapproved evidence host')}catch{throw Error('Valid official or verified evidence URL required')}
@@ -19,7 +21,7 @@ export function reviewCatalyst(candidate,request,at=new Date().toISOString()){
  }
  return {decision:'approve',id:candidate.id,reviewedAt:at,record:{
   id:candidate.id,kind:kinds.has(request.kind)?request.kind:(candidate.type==='proposal'?'proposals':'news'),
-  title:clean(candidate.title).slice(0,180),date:at.slice(0,10),checkedAt:at.slice(0,10),
+  title:clean(candidate.title).slice(0,180),date:eventDate,checkedAt:at.slice(0,10),
   status:stage+' · owner reviewed',stage,affects:(Array.isArray(request.affects)?request.affects:[]).filter(x=>typeof x==='string'&&x.length<40).slice(0,6).length
    ?request.affects.filter(x=>typeof x==='string'&&x.length<40).slice(0,6):['Ecosystem'],
   summary,effect,next,url:candidate.url,
