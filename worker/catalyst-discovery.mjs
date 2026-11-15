@@ -1,5 +1,5 @@
 // Low-cost public-source Catalyst discovery. Candidates are never auto-published.
-const accepted=/(?:\bissuance\b|\bemission\b|\binflation\b|\bbuybacks?\b|\brevenue\b|\bfees?\b|\bburns?\b|\btokenomics\b)/i;
+const accepted=/(?:\bissuance\b|\bemissions?\b|\binflation\b|\bbuybacks?\b|\brevenue\b|\bfees?\b|\bburns?\b|\btokenomics\b|\bintents?\b|\bchain signatures?\b|\bMPC\b|\bsharding\b|\bprivacy\b|\bconfidential\b|\bAI agents?\b|\bvalidators?\b|\bgovernance\b|\bupgrades?\b|\bsecurity\b|\bintegrations?\b|\bpartnerships?\b)/i;
 const iso=()=>new Date().toISOString();
 const get=async url=>{
  const r=await fetch(url,{headers:{Accept:'application/json','User-Agent':'Talvoryn-SourceMonitor'},signal:AbortSignal.timeout(12000)});
