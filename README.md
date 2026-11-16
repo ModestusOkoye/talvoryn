@@ -28,7 +28,7 @@ The aim is to follow a changing picture of NEAR, form research questions and **r
 | [**Methodology**](https://talvoryn.pages.dev/methodology.html) | Data sources, formulas, coverage, verification and reproducibility |
 | [**Research Thesis**](research-thesis.md) | AI-readable research brief covering the hypothesis, evidence, counterarguments and what to verify next |
 
-## Three pillars of NEAR research
+## Three pillars of Talvoryn
 
 ### 1. Technical analysis (TA) — What is the market doing?
 
