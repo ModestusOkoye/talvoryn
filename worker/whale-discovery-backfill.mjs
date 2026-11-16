@@ -51,22 +51,22 @@ export async function advanceWhaleDiscovery(previous,{fetchPage,knownAccounts,pa
    requests++;
    const response=await fetchPage(body);
    if(!response||!Array.isArray(response.transfers))throw Error('Invalid FastNEAR transfer response');
+   const next=response.resume_token;
+   if(next!==null&&next!==undefined&&typeof next!=='string')throw Error('Invalid FastNEAR continuation token');
+   if(next&&next===state.cursor)throw Error('Repeated FastNEAR continuation token');
    for(const row of response.transfers){
     if(state.known.has(row.other_account_id))state.knownTransferCount++;
     else addCandidate(state,row,wallet);
    }
    state.scannedPages++;
    state.scannedTransfers+=response.transfers.length;
-   const next=response.resume_token;
-   if(next!==null&&next!==undefined&&typeof next!=='string')throw Error('Invalid FastNEAR continuation token');
    if(next){
-    if(next===state.cursor)throw Error('Repeated FastNEAR continuation token');
     state.cursor=next;
    }else{
     state.nextWallet++;state.completedWallets++;state.cursor=null;
    }
   }
-  state.completed=state.nextWallet===state.roster.length&&!state.candidateLimitReached;
+  state.completed=state.nextWallet===state.roster.length;
   state.updatedAt=iso(now);
   state.lastError=null;
  }catch(e){state.lastError=e?.name==='TimeoutError'?'timeout':/Source HTTP \d+/.exec(e?.message||'')?.[0]||e?.message?.slice(0,100)||'source_error';state.updatedAt=iso(now)}
