@@ -11,7 +11,7 @@ const previous={revision:5,registry:EXCHANGE_REGISTRY,roster:[{account:'alice.ne
 let transferRequests=0;
 try{
   globalThis.fetch=async url=>{
-    if(String(url).includes('free.rpc.fastnear.com'))return Response.json({jsonrpc:'2.0',result:{header:{height:12345678}}});
+    if(String(url).includes('free.rpc.fastnear.com'))return Response.json({jsonrpc:'2.0',result:{header:{height:12345678,timestamp_nanosec:String(BigInt(now)*1000000n)}}});
     if(String(url).includes('transfers.main.fastnear.com')){
       transferRequests++;
       if(transferRequests===1)return Response.json({transfers:[],resume_token:'saved-page-cursor'});
