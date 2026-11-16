@@ -19,7 +19,7 @@ def rpc(method,params):
  for attempt in range(6):
   try:
    with pace:
-    time.sleep(max(0,.4-(time.monotonic()-last_request)));last_request=time.monotonic()
+    time.sleep(max(0,1.25-(time.monotonic()-last_request)));last_request=time.monotonic()
    headers={'Content-Type':'application/json','User-Agent':'NEARLensResearch/1.0'}
    if os.environ.get('FASTNEAR_API_KEY'):headers['Authorization']='Bearer '+os.environ['FASTNEAR_API_KEY']
    q=urllib.request.Request(RPC,data=json.dumps(req).encode(),headers=headers)
