@@ -35,7 +35,7 @@ export function extractBlogLinks(html){
 }
 export async function discoverCatalysts(previous={},options={}){
  const observations=[],errors={},sources={};
- async function run(name,fn){try{const outcome=await fn();observations.push(...(outcome.items||[]));sources[name]={ok:true,checkedAt:now(),...(outcome.meta||{})}}catch(e){errors[name]=String(e.message).slice(0,160);sources[name]={ok:false,error:errors[name]}}}
+ async function run(name,fn){try{const outcome=await fn();observations.push(...(outcome.items||[]));sources[name]={ok:true,checkedAt:now(),...(outcome.meta||{})}}catch(e){errors[name]=String(e.message).slice(0,160);sources[name]={ok:false,error:errors[name],checkedAt:now()}}}
  await run('governance',async()=>{
   const d=await request('https://gov.near.org/latest.json');
   if(!Array.isArray(d.topic_list?.topics))throw Error('Missing topics');
@@ -45,7 +45,7 @@ export async function discoverCatalysts(previous={},options={}){
  });
  const lastGitHub=previous.sources?.github;
  // Successful NEP checks are useful for six hours; avoid burning shared unauthenticated API quota hourly.
- if(lastGitHub?.ok&&lastGitHub.checkedAt&&Date.now()-Date.parse(lastGitHub.checkedAt)<6*3600000){
+ if(lastGitHub?.checkedAt&&Date.now()-Date.parse(lastGitHub.checkedAt)<(lastGitHub.ok?6:3)*3600000){
   sources.github={...lastGitHub,reused:true};
  }else await run('github',async()=>{
   const headers=options.githubToken?{Authorization:'Bearer '+options.githubToken}:{};
