@@ -97,7 +97,7 @@ export async function collectWhaleHistory(previous){
       continue;
      }
     }catch(e){
-     pendingHistory[w.account]=nativeOnly?pending||{from,to,provider:'nearblocks',rows:[],next:null}:{from,to,provider:'fastnear',cursor:cursor||null,rows};
+     pendingHistory[w.account]=e.checkpoint?{from,to,provider:'nearblocks',...e.checkpoint}:nativeOnly?pending||{from,to,provider:'nearblocks',rows:[],next:null}:{from,to,provider:'fastnear',cursor:cursor||null,rows};
      continue;
     }
    }
