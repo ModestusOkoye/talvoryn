@@ -1,3 +1,4 @@
+import {knownExchangeAccount} from './exchange-flows.mjs';
 // Bounded, read-only NearBlocks v3 native-NEAR receipts fallback.
 // It never treats partial pagination as a completed wallet observation.
 // DEX and FT activity still require separate receipt-proven evidence.
@@ -21,7 +22,7 @@ export function normalizeNearBlocksReceipt(r,account){
 export async function fetchNearBlocksWindow(account,from,to,prior={},maxPages=3){
   if(!/^[a-z0-9._-]{2,64}$/.test(account))throw Error('Invalid NEAR account');
   const rows=Array.isArray(prior.rows)?prior.rows:[],next=prior.next??null;
-  let cursor=next,lastCursor=null,complete=false,pages=0,seenBefore=Infinity;
+  let cursor=next,lastCursor=null,complete=false,pages=0;
   for(;pages<maxPages;pages++){
     const url=new URL(ENDPOINT+encodeURIComponent(account)+'/receipts');
     url.searchParams.set('limit','25');
@@ -40,7 +41,7 @@ export async function fetchNearBlocksWindow(account,from,to,prior={},maxPages=3)
       if(t>=to)continue;
       if(t<from){oldEnough=true;continue;}
       const normalized=normalizeNearBlocksReceipt(item,account);
-      if(normalized)rows.push(normalized);
+      if(normalized&&knownExchangeAccount(normalized.other_account_id))rows.push(normalized);
     }
     if(oldEnough||!payload.meta?.next_page){complete=true;cursor=null;break;}
     lastCursor=cursor;cursor=payload.meta.next_page;
