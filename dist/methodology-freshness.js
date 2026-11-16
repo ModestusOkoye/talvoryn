@@ -12,7 +12,7 @@
     {label:'Integrators',schedule:'Hourly',key:'integrators'},
     {label:'Sampled wallet activity',schedule:'Every 3 hours',key:'whales'},
     {label:'Historical issuance and burns',schedule:'Separate research process',key:'supply-history'},
-    {label:'Catalyst research',schedule:'Automatic Cloudflare sync pending',key:'catalysts'}
+    {label:'Catalyst discovery',schedule:'Hourly source checks',key:'catalyst-discovery'}
   ];
   const cleanDate=x=>{
     if(typeof x!=='string'||!/^\d{4}-\d{2}-\d{2}(?:T|$)/.test(x)||!Number.isFinite(Date.parse(x.length===10?x+'T00:00:00Z':x)))return null;
@@ -70,7 +70,7 @@
        {...defs[4],...fromJob('integrators')},
        {...defs[5],...fromJob('whales')},
        {...defs[6],through:historicalObserved,checked:through(historical.retrievedAt),note:historicalObserved?'Historical coverage; not necessarily complete':null},
-       {...defs[7],through:null,checked:null}
+       {...defs[7],through:get('catalyst-discovery').ok===true?through(get('catalyst-discovery').through)||through(get('catalyst-discovery').lastSuccess):through(get('catalyst-discovery').lastSuccess),checked:get('catalyst-discovery').lastSuccess||null,note:get('catalyst-discovery').ok===false?'Latest check failed; last successful check retained. Discovery is not publication.':'Source discovery only; published stories require separate review'}
       ];
       render(rows,true);
     }catch{
