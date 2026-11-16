@@ -94,6 +94,22 @@ flowchart TD
 
 The statistical Forecast model is **not automatically retrained with each hourly data refresh**. Source monitoring can identify candidate catalysts; a candidate is not automatically an approved interpretation or a published story.
 
+### Whale monitoring: free-plan request budgets
+
+The monitoring cohort contains **48 existing verified wallets**, not a network-wide holder ranking. It records qualifying exchange transfers and separately verified DEX swaps, retaining the underlying transaction receipts and per-wallet UTC cutoffs.
+
+**Failure identified on 16 November 2026:** Cloudflare Workers Free permits **50 external subrequests per invocation** (see [Cloudflare's official Workers limits](https://developers.cloudflare.com/workers/platform/limits/)). The earlier whale job allowed **up to 60 FastNEAR transfer queries**, *plus* RPC checks, retries and NearBlocks calls. This exceeded the available per-invocation envelope. Saved failures included eight generic FastNEAR/backup errors and two additional-page checkpoints. Exceeding the Worker limit is a strongly supported root-cause explanation, but it has not been independently proven for every historical error.
+
+**Recovery architecture (implemented in source and tested; requires production deployment and trigger configuration):**
+
+- Divide the same 48-wallet roster deterministically into two 24-wallet batches. Run at **minute 17 and minute 27**, every three hours, as separate Cloudflare Worker invocations. Both batches make up one monitoring cycle.
+- Impose a **46-external-fetch hard ceiling per invocation**, covering FastNEAR RPC, indexed transfers, retries and NearBlocks; leave headroom under Cloudflare's 50-request Free cap. FastNEAR transfer pagination has a separate 30-request ceiling per batch.
+- Use the authenticated FastNEAR server key first; retrieve only missing transaction intervals. Reuse verified checkpoints and bounded pagination.
+- Use NearBlocks only after a real FastNEAR failure. Its native-transfer receipts do **not** establish complete DEX/wNEAR coverage.
+- Keep old verified data and identify unfinished windows; never mark partial coverage as zero or complete.
+
+**Configuration note:** The owner-local `wrangler.worker.jsonc` is not committed to the repository. Its `triggers.crons` must include `7 * * * *`, `17 */3 * * *` **and** `27 */3 * * *` before the second batch is live. The existing hourly refresh is unchanged. Tests verify the two-batch processing and limit enforcement; they do not establish live coverage or successful Cron execution. Verify production health and both batch runs after deployment.
+
 ### Data schedules and transparency
 
 | Dataset | Collection/check schedule |
