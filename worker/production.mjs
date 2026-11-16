@@ -1,5 +1,7 @@
 import {read,write,status,health} from './storage.mjs';
 import {collectWhaleHistory,diagnoseWhaleTransfer} from './whales.mjs';
+import {beginWhaleDiscovery,advanceWhaleDiscovery,whaleDiscoverySummary,rankedWhaleCandidates} from './whale-discovery-backfill.mjs';
+import {EXCHANGE_REGISTRY} from './exchange-flows.mjs';
 import {discoverCatalysts} from './catalyst-discovery.mjs';
 import {reviewCatalyst} from './catalyst-review.mjs';
 import {catalystImpact} from './catalyst-impact.mjs';
@@ -92,7 +94,36 @@ if(u.pathname==='/api/admin/catalyst-candidates'){
  return reply(data||{pending:[],lastCheckedAt:null,sources:{}});
 }
 if(req.method==='GET'&&u.pathname==='/data/source-status.json')return reply({mode:'dynamic',jobs:await health(env.DB),monthlySupply:(await read(env.DB,'supply-history'))?.meta,finalSupplyObservation:await read(env.DB,'supply-head')});if(req.method==='GET'&&(publicFiles.has(name)||u.pathname==='/api/whales'||u.pathname==='/api/catalysts')){const key=u.pathname==='/api/whales'?'whales':u.pathname==='/api/catalysts'?'economic-catalysts':name,d=await read(env.DB,key);return d?reply(d):reply({error:'Verified dataset unavailable',dataset:key},503)}if(req.method==='POST'&&u.pathname.replace(/\/$/,'')==='/api/admin/diagnose-whale-transfer'){if(!env.OWNER_API_TOKEN||req.headers.get('Authorization')!=='Bearer '+env.OWNER_API_TOKEN)return reply({error:'Unauthorized'},401);const prior=await read(env.DB,'whales');return reply({diagnosticVersion:2,...await diagnoseWhaleTransfer(prior,env.FASTNEAR_API_KEY)});}
-if(u.pathname.startsWith('/api/admin/')){if(!env.OWNER_API_TOKEN||req.headers.get('Authorization')!=='Bearer '+env.OWNER_API_TOKEN)return reply({error:'Unauthorized'},401);if(req.method!=='POST')return reply({error:'Use POST'},405);if(u.pathname==='/api/admin/catalyst-review'){
+if(u.pathname.startsWith('/api/admin/')){if(!env.OWNER_API_TOKEN||req.headers.get('Authorization')!=='Bearer '+env.OWNER_API_TOKEN)return reply({error:'Unauthorized'},401);if(req.method!=='POST')return reply({error:'Use POST'},405);if(u.pathname==='/api/admin/whale-discovery-backfill'){
+ const mode=u.searchParams.get('mode')||'status';
+ if(!['status','advance','candidates'].includes(mode))return reply({error:'Unknown discovery mode'},400);
+ const dataset='whale-discovery-backfill';
+ if(mode==='status')return reply(whaleDiscoverySummary(await read(env.DB,dataset)));
+ if(mode==='candidates'){const state=await read(env.DB,dataset);return reply({summary:whaleDiscoverySummary(state),candidates:rankedWhaleCandidates(state,100)});}
+ if(!env.FASTNEAR_API_KEY)return reply({error:'FastNEAR key unavailable'},503);
+ // Independent short-lived lease stops overlapping backfill calls from losing checkpoints.
+ const leaseToken=crypto.randomUUID(),clock=Date.now();
+ const lease=await env.DB.prepare('INSERT INTO leases(name,token,expires) VALUES(?,?,?) ON CONFLICT(name) DO UPDATE SET token=excluded.token,expires=excluded.expires WHERE leases.expires<?')
+  .bind('whale-discovery',leaseToken,clock+120000,clock).run();
+ if(!lease.meta.changes)return reply({error:'Discovery already running'},409);
+ try {
+  let state=await read(env.DB,dataset);
+  if(!state){const whales=await read(env.DB,'whales');if(!whales?.roster)throw Error('Whale cohort missing');state=beginWhaleDiscovery(whales.roster,EXCHANGE_REGISTRY);}
+  const knownAccounts=[...EXCHANGE_REGISTRY.cex,...EXCHANGE_REGISTRY.dex].map(x=>x.account);
+  const fetchPage=async body=>{
+   const r=await fetch('https://transfers.main.fastnear.com/v0/transfers',{method:'POST',
+    headers:{Accept:'application/json','Content-Type':'application/json',Authorization:'Bearer '+env.FASTNEAR_API_KEY},
+    body:JSON.stringify(body),signal:AbortSignal.timeout(10000)});
+   if(!r.ok)throw Error('Source HTTP '+r.status);
+   return r.json();
+  };
+  const next=await advanceWhaleDiscovery(state,{fetchPage,knownAccounts,pageLimit:20});
+  const {requestsThisRun,...persisted}=next;
+  await write(env.DB,dataset,persisted,new Date(persisted.to).toISOString());
+  return reply({...whaleDiscoverySummary(persisted),requestsThisRun});
+ }finally{await env.DB.prepare('DELETE FROM leases WHERE name=? AND token=?').bind('whale-discovery',leaseToken).run();}
+}
+if(u.pathname==='/api/admin/catalyst-review'){
  const raw=await req.text();if(raw.length>9000)return reply({error:'Review input too large'},413);
  let input;try{input=JSON.parse(raw)}catch{return reply({error:'Invalid review JSON'},400)}
  const discovered=await read(env.DB,'catalyst-discovery');
