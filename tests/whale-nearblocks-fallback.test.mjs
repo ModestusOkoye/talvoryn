@@ -21,17 +21,17 @@ const original=globalThis.fetch;
 const priorEvent={id:'prior',account:'alice.near',counterparty:'binance1.near',kind:'CEX withdrawal',venueType:'CEX',transaction:'older-transaction',timestamp:iso(now-2*86400000),amount:25};
 const previous={revision:5,registry:EXCHANGE_REGISTRY,roster:[{account:'alice.near',verifiedDate:iso(now).slice(0,10),codeHash:'11111111111111111111111111111111'}],wallets:[{account:'alice.near',historyFrom:iso(now-31*86400000),observedThrough:iso(now-600000),unverifiedDexTransfers:0}],ledger:[priorEvent],flowCursor:0,pendingHistory:{}};
 try{
- globalThis.fetch=async url=>{
+ globalThis.fetch=async (url,options={})=>{
   const value=String(url);
-  if(value.includes('free.rpc.fastnear.com'))return Response.json({jsonrpc:'2.0',result:{header:{height:12345678,timestamp_nanosec:String(BigInt(now+1000)*1000000n)}}});
-  if(value.includes('transfers.main.fastnear.com'))return new Response('Rate limited',{status:429});
+  if(value.includes('rpc.mainnet.fastnear.com')){assert.equal(options.headers.Authorization,'Bearer mock-key');return Response.json({jsonrpc:'2.0',result:{header:{height:12345678,timestamp_nanosec:String(BigInt(now+1000)*1000000n)}}});}
+  if(value.includes('transfers.main.fastnear.com')){assert.equal(options.headers.Authorization,'Bearer mock-key');return new Response('Rate limited',{status:429});}
   if(value.includes('api.nearblocks.io'))return Response.json({data:[receipt],meta:{next_page:null}});
   throw Error('Unexpected request '+url);
  };
  const fetched=await fetchNearBlocksWindow('alice.near',now-600000,now,{},2);
  assert.equal(fetched.complete,true);
  assert.equal(fetched.rows.length,1);
- const result=await collectWhaleHistory(structuredClone(previous));
+ const result=await collectWhaleHistory(structuredClone(previous),'mock-key');
  assert.equal(result.sourceRateLimited,true);
  assert.equal(result.backupWallets,1);
  assert.equal(result.pendingHistory['alice.near'],undefined);
