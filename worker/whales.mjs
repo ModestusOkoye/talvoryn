@@ -65,7 +65,8 @@ export async function collectWhaleHistory(previous,fastnearKey=null){
   // Narrow each query to the wallet's last verified observation; do not rescan 30 days.
   const ordered=[...roster].sort((a,b)=>(Date.parse(old.get(a.account)?.observedThrough||0)||0)-(Date.parse(old.get(b.account)?.observedThrough||0)||0));
   const fresh=[],ledger=[],cohort=new Set(roster.map(w=>w.account));let requests=0,limited=false,proofRequests=0,backupPages=0,backupWallets=0;const MAX_TRANSFER_REQUESTS=60;const txCache=new Map();
-  for(const w of ordered){
+  for(const [walletIndex,w] of ordered.entries()){
+   const remainingWallets=ordered.length-walletIndex-1;
    const prior=old.get(w.account),pending=pendingHistory[w.account];
    const from=pending?.from??(prior&&Date.parse(prior.historyFrom)<=start?Math.max(start,Date.parse(prior.observedThrough)-60000):start);
    const finalTime=Number(BigInt(final.header.timestamp_nanosec)/1000000n);
@@ -76,8 +77,10 @@ export async function collectWhaleHistory(previous,fastnearKey=null){
    // Always prefer FastNEAR, unless resuming an unfinished NearBlocks page.
    if(!complete&&!nativeOnly&&!limited&&requests<MAX_TRANSFER_REQUESTS){
     try{
-     for(let page=0;page<1;page++){
-      if(requests>=MAX_TRANSFER_REQUESTS)break;
+     for(let page=0;page<3;page++){
+      // Reserve one FastNEAR request for each wallet we have not visited yet.
+      // Spend spare budget on additional pages of this wallet's missing history.
+      if(requests>=MAX_TRANSFER_REQUESTS||page>0&&requests+remainingWallets>=MAX_TRANSFER_REQUESTS)break;
       requests++;
       const d=await transfers({account_id:w.account,ignore_system:true,from_timestamp_ms:from,to_timestamp_ms:to,limit:100,desc:true,...(cursor?{resume_token:cursor}:{})},fastnearKey);
       if(!Array.isArray(d.transfers))throw Error('Invalid FastNEAR transfer page');
