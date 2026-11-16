@@ -19,7 +19,7 @@ export function normalizeNearBlocksReceipt(r,account){
     receipt_id:r.receipt_id,transfer_index:0,transaction_id:r.transaction_hash,
     signer_id:sender,source:'NearBlocks v3 receipts'};
 }
-export async function fetchNearBlocksWindow(account,from,to,prior={},maxPages=3){
+export async function fetchNearBlocksWindow(account,from,to,prior={},maxPages=3,request=fetch){
   if(!/^[a-z0-9._-]{2,64}$/.test(account))throw Error('Invalid NEAR account');
   const rows=Array.isArray(prior.rows)?prior.rows:[],next=prior.next??null;
   let cursor=next,lastCursor=null,complete=false,pages=0;
@@ -30,7 +30,7 @@ export async function fetchNearBlocksWindow(account,from,to,prior={},maxPages=3)
     // An explicit upper time boundary keeps every resumed page inside one fixed interval.
     url.searchParams.set('before_ts',String(BigInt(to)*1000000n));
     if(cursor)url.searchParams.set('next',cursor);
-    const response=await fetch(url,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(12000)});
+    const response=await request(url,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(12000)});
     if(!response.ok){const error=Error('NearBlocks HTTP '+response.status);error.rateLimited=response.status===429;throw error;}
     const payload=await response.json();
     if(!Array.isArray(payload?.data))throw Error('Invalid NearBlocks receipts');
