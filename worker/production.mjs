@@ -41,6 +41,19 @@ export default {async scheduled(event,env){return runScheduled(env,event)},async
  });
  return reply({...feed,items});
 }
+if(req.method==='GET'&&u.pathname==='/api/catalysts/projects'){
+ const page=Number(u.searchParams.get('page')||'1');
+ if(!Number.isInteger(page)||page<1||page>500)return reply({error:'Page must be 1–500'},400);
+ try{
+  const d=await json('https://nearhackathon.com/api/projects?page='+page);
+  if(d.preview||!Array.isArray(d.projects)||!Number.isInteger(d.total)||d.total<0||d.projects.length>50)throw Error('Unverified directory');
+  return reply({page,total:d.total,pageSize:d.pageSize,projects:d.projects.map(p=>({
+   id:String(p.id||''),project_name:String(p.project_name||'').slice(0,180),
+   tracks:Array.isArray(p.tracks)?p.tracks.filter(x=>typeof x==='string').slice(0,5):[],
+   demo_url:typeof p.demo_url==='string'&&p.demo_url.startsWith('https://x.com/')?p.demo_url:null
+  })),source:'https://nearhackathon.com/#projects',definition:'Public submissions, not verified launches'});
+ }catch{return reply({error:'Official hackathon directory temporarily unavailable'},503)}
+}
 if(req.method==='GET'&&u.pathname==='/api/catalysts/hackathon'){
  const d=await read(env.DB,'catalyst-discovery');
  const event=d?.hackathon;
