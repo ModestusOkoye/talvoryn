@@ -71,11 +71,14 @@ export async function collectWhaleHistory(previous,fastnearKey=null){
    const from=pending?.from??(prior&&Date.parse(prior.historyFrom)<=start?Math.max(start,Date.parse(prior.observedThrough)-60000):start);
    const finalTime=Number(BigInt(final.header.timestamp_nanosec)/1000000n);
    const to=Math.min(pending?.to??now,finalTime);
-   let cursor=pending?.provider==='nearblocks'?null:pending?.cursor;
-   let rows=pending?.provider==='nearblocks'?[]:pending?.rows||[];
-   let complete=!!pending?.downloadComplete,nativeOnly=pending?.provider==='nearblocks',fastnearFailed=false,fastnearError=null;
-   // Always prefer FastNEAR, unless resuming an unfinished NearBlocks page.
-   if(!complete&&!nativeOnly&&!limited&&requests<MAX_TRANSFER_REQUESTS){
+   // A saved NearBlocks page is backup evidence, not a permanent provider assignment.
+   // Retain it for fallback, but restart FastNEAR from this window's beginning.
+   const backupCheckpoint=pending?.provider==='nearblocks'?pending:null;
+   let cursor=backupCheckpoint?null:pending?.cursor;
+   let rows=backupCheckpoint?[]:pending?.rows||[];
+   let complete=!!pending?.downloadComplete&&!backupCheckpoint,nativeOnly=false,fastnearFailed=false,fastnearError=null;
+   // FastNEAR gets first priority on every run, including previous backup wallets.
+   if(!complete&&!limited&&requests<MAX_TRANSFER_REQUESTS){
     try{
      for(let page=0;page<3;page++){
       // Reserve one FastNEAR request for each wallet we have not visited yet.
@@ -92,9 +95,9 @@ export async function collectWhaleHistory(previous,fastnearKey=null){
    }
    // When FastNEAR cannot finish, use bounded NearBlocks v3 native receipts.
    // NearBlocks is native-only here: DEX/wNEAR coverage is NOT claimed complete.
-   if(!complete&&(fastnearFailed||nativeOnly||limited)&&backupPages<12){
+   if(!complete&&(fastnearFailed||limited)&&backupPages<12){
     try{
-     const saved=nativeOnly?pending:{};
+     const saved=backupCheckpoint||{};
      const result=await fetchNearBlocksWindow(w.account,from,to,saved,Math.min(3,12-backupPages));
      backupPages+=result.pages;
      if(result.complete){
@@ -104,7 +107,7 @@ export async function collectWhaleHistory(previous,fastnearKey=null){
       continue;
      }
     }catch(e){
-     pendingHistory[w.account]=e.checkpoint?.next?{from,to,provider:'nearblocks',...e.checkpoint,reason:e.rateLimited?'backup_rate_limit':'backup_error'}:nativeOnly?{...pending,reason:e.rateLimited?'backup_rate_limit':'backup_error'}:{from,to,provider:'fastnear',cursor:cursor||null,rows,reason:fastnearError||'backup_error'};
+     pendingHistory[w.account]=e.checkpoint?.next?{from,to,provider:'nearblocks',...e.checkpoint,reason:e.rateLimited?'backup_rate_limit':'backup_error'}:backupCheckpoint?{...backupCheckpoint,reason:e.rateLimited?'backup_rate_limit':'backup_error'}:{from,to,provider:'fastnear',cursor:cursor||null,rows,reason:fastnearError||'backup_error'};
      continue;
     }
    }
