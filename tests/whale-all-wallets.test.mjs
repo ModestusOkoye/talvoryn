@@ -17,7 +17,7 @@ try {
    const body=JSON.parse(options.body);requests++;visited.add(body.account_id);perWallet.set(body.account_id,(perWallet.get(body.account_id)||0)+1);
    assert(body.from_timestamp_ms>=Date.parse(stamp)-60000,'No repeated 30-day scan');
    assert(body.limit===100,'Bounded page size');
-   const index=Number(body.account_id.match(/^whale(\\d+)\\.near$/)[1]);
+   const index=Number(body.account_id.match(/^whale(\d+)\.near$/)[1]);
    return Response.json({transfers:[],resume_token:index<11&&perWallet.get(body.account_id)===1?'page-two':null});
   }
   throw Error('Unexpected request '+url);
@@ -25,7 +25,7 @@ try {
  const result=await collectWhaleHistory(structuredClone(previous));
  assert.equal(visited.size,48,'Every existing wallet queried');
  assert.equal(requests,59,'48 first pages plus 11 necessary continuation pages');
- assert([...perWallet.entries()].every(([account,calls])=>calls===(Number(account.match(/^whale(\\d+)\\.near$/)[1])<11?2:1)),'No unnecessary pages fetched');
+ assert([...perWallet.entries()].every(([account,calls])=>calls===(Number(account.match(/^whale(\d+)\.near$/)[1])<11?2:1)),'No unnecessary pages fetched');
  assert.equal(result.wallets.length,48);
  assert.equal(result.backupWallets,0);
  assert.equal(result.transferRequests,59);
