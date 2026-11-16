@@ -45,7 +45,7 @@ export function whalePeriods(state,now=Date.now()){
  for(const [period,days] of [['D',1],['W',7],['M',30]]){
   const from=end-days*WHALE_DAY,covered=(state.wallets||[]).filter(w=>cohort.has(w.account)&&Date.parse(w.historyFrom)<=from&&Date.parse(w.observedThrough)>=end),coveredAccounts=new Set(covered.map(w=>w.account));
   const events=ledger.filter(e=>Date.parse(e.timestamp)>=from&&Date.parse(e.timestamp)<end&&coveredAccounts.has(e.account)),incoming=events.reduce((n,e)=>n+Math.max(0,e.amount),0),outgoing=events.reduce((n,e)=>n+Math.max(0,-e.amount),0),unverifiedDexTransfers=covered.reduce((n,w)=>n+(w.unverifiedDexTransfers||0),0);
-  periods[period]={period,days,from:new Date(from).toISOString(),through,incoming,outgoing,net:incoming-outgoing,events,wallets:covered,roster,partialWallets:roster.length-covered.length,cachedWallets:covered.filter(w=>Date.parse(w.observedThrough)<now).length,unverifiedDexTransfers,ok:covered.length>0,complete:covered.length===roster.length&&roster.length>0&&!unverifiedDexTransfers&&!covered.some(w=>w.nativeOnly)};
+  periods[period]={period,days,from:new Date(from).toISOString(),through,incoming,outgoing,net:incoming-outgoing,events,wallets:covered,roster,partialWallets:roster.length-covered.length,cachedWallets:covered.filter(w=>Date.parse(w.observedThrough)<now).length,unverifiedDexTransfers,ok:covered.length>0,complete:covered.length===roster.length&&roster.length>0&&!unverifiedDexTransfers&&!covered.some(w=>w.nativeOnly)&&!Object.keys(state.pendingHistory||{}).some(account=>cohort.has(account))};
  }
  return {...state,revision:5,mode:'rolling_exchange_flows',classification:'verified_exchange_flows',ledger,periods,registry:EXCHANGE_REGISTRY,...periods.D,periods};
 }
