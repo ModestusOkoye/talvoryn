@@ -94,34 +94,39 @@ flowchart TD
 
 The statistical Forecast model is **not automatically retrained with each hourly data refresh**. Source monitoring can identify candidate catalysts; a candidate is not automatically an approved interpretation or a published story.
 
-### Whale monitoring: free-plan request budgets
+### Whale intelligence — inspect the evidence
 
-The monitoring cohort contains **48 existing verified wallets**, not a network-wide holder ranking. It records qualifying exchange transfers and separately verified DEX swaps, retaining the underlying transaction receipts and per-wallet UTC cutoffs.
+Talvoryn monitors **48 identified NEAR wallets** and measures their verified exchange-related flows over rolling **24-hour, 7-day and 30-day** windows. Explore **Whale Accumulation** on the [Overview](https://talvoryn.pages.dev/performance.html); the [public whale dataset](https://talvoryn.pages.dev/api/whales) exposes the underlying wallet cohort, exchange registry, transaction receipts, classification and reporting windows.
 
-**Failure identified on 16 November 2026:** Cloudflare Workers Free permits **50 external subrequests per invocation** (see [Cloudflare's official Workers limits](https://developers.cloudflare.com/workers/platform/limits/)). The earlier whale job allowed **up to 60 FastNEAR transfer queries**, *plus* RPC checks, retries and NearBlocks calls. This exceeded the available per-invocation envelope. Saved failures included eight generic FastNEAR/backup errors and two additional-page checkpoints. Exceeding the Worker limit is a strongly supported root-cause explanation, but it has not been independently proven for every historical error.
+The published exchange registry currently lists **26 CEX address entries** (Binance and KuCoin) and **two DEX contracts** (Rhea / Ref AMM and DCL). CEX movements are classified as exchange deposits or withdrawals, not automatically as sales or purchases. DEX buys and sells require a successful transaction and matching swap/transfer evidence. Unverified counterparties do not become trades.
 
-**Recovery architecture (deployed and manually verified on 16 November 2026):**
+**Try it yourself** — run this in any browser's developer console on Talvoryn, or in Node.js 22+:
 
-- Divide the same 48-wallet roster deterministically into two 24-wallet batches. Run at **minute 17 and minute 27**, every three hours, as separate Cloudflare Worker invocations. Both batches make up one monitoring cycle.
-- Impose a **46-external-fetch hard ceiling per invocation**, covering FastNEAR RPC, indexed transfers, retries and NearBlocks; leave headroom under Cloudflare's 50-request Free cap. FastNEAR transfer pagination has a separate 30-request ceiling per batch.
-- Use the authenticated FastNEAR server key first; retrieve only missing transaction intervals. Reuse verified checkpoints and bounded pagination.
-- Use NearBlocks only after a real FastNEAR failure. Its native-transfer receipts do **not** establish complete DEX/wNEAR coverage.
-- Keep old verified data and identify unfinished windows; never mark partial coverage as zero or complete.
+```js
+const d = await fetch('https://talvoryn.pages.dev/api/whales').then(r => {
+  if (!r.ok) throw Error('Whale dataset unavailable: ' + r.status);
+  return r.json();
+});
+console.log('Wallets:', d.roster.length, 'CEX addresses:', d.registry.cex.length,
+  'DEX contracts:', d.registry.dex.length);
+console.table(['D', 'W', 'M'].map(period => {
+  const p = d.periods[period];
+  return {
+    period, fromUTC: p.from, throughUTC: p.through,
+    complete: p.complete, inflowsNEAR: p.incoming,
+    outflowsNEAR: p.outgoing, netNEAR: p.net,
+    verifiedEvents: p.events.length
+  };
+}));
+console.table(d.periods.M.events.slice(0, 10).map(e => ({
+  timeUTC: e.timestamp, kind: e.kind, venue: e.venue,
+  amountNEAR: e.amount, transaction: e.transaction, receipt: e.receipt
+})));
+```
 
-**Production verification, 16 November 2026 (UTC):** Worker version `b6166cb3-fb65-4418-a00f-1f5271f93e0d` reported all three configured cron triggers (`7 * * * *`, `17 */3 * * *`, `27 */3 * * *`). Manual authenticated Batch 1 returned `batchIndex: 0`, 24 transfer requests, 28 total external requests, and 3 pending wallets. Manual Batch 2 returned `batchIndex: 1`, 24 transfer requests, 28 total external requests, **48 covered / 48 total wallets, 0 pending wallets, 0 rate-limit reports, and 0 partial wallets**. Its dataset check time was `2026-11-16T18:30:50.159Z`, with oldest recorded wallet observation `2026-11-16T18:17:57.134Z`. The reported `freshWallets: 44` uses a three-minute window relative to the second batch's check, so is **not** the combined-cycle count. These are point-in-time production ingestion results, **not** independent validation of every published transfer classification, the public UI, or unattended future cron execution.
+To reproduce an event, inspect its transaction and receipt on a NEAR explorer and compare the wallet, exchange counterparty, timestamp, token amount and event classification. The [Methodology](https://talvoryn.pages.dev/methodology.html) explains the rules and timestamp cutoffs. The 48 wallets are a **monitored sample**, not a claimed ranking of every NEAR holder.
 
-**Configuration note:** The owner-local `wrangler.worker.jsonc` is not committed to the repository and must retain all three cron entries on future deploys. The existing hourly refresh is unchanged. Automated tests validate batching and request-limit enforcement; monitor consecutive unattended cycles and public data freshness before claiming ongoing reliability.
-
-### Counterparty discovery and exchange verification
-
-The whale collector's initial exchange allowlist is **not** exhaustive. The original version discarded transfer records involving unknown counterparties before they could be investigated. A candidate-discovery path now examines those counterparties in the **same FastNEAR transfer pages** already fetched for the 48 monitored wallets. It stores a bounded candidate list with observed wallet relationships, asset types, sample receipt IDs, and first/last seen timestamps, without adding provider calls.
-
-**Important distinction:** A discovered counterparty is **not** thereby a CEX deposit address, a DEX contract, or evidence of a trade. Unknown candidates remain `unverified` and do not alter the displayed accumulation totals. A promotion into the exchange allowlist requires independent, reproducible evidence:
-- **CEX:** documented exchange ownership of the exact NEAR address (or corroborated, manually reviewed exchange attribution). An exchange-looking name or repeated transfers alone does not establish custody.
-- **DEX:** evidence that the account is a relevant on-chain contract, plus a successful swap tied to the exact transfer/receipt and traded NEAR or wNEAR amount. Contract deployment by itself proves neither DEX status nor a swap.
-- **Other flows:** ordinary transfers, bridges, staking, internal movements and unresolved counterparties do not automatically count as buys or sells.
-
-**Coverage caveat:** The initial verified historical ledger retains only counterparties in the earlier allowlist. The new candidate collector is **forward-looking from deployment** and cannot retroactively recover unknown counterparties filtered out of previous FastNEAR pages. Full historical exchange discovery requires a separate controlled, credit-budgeted backfill and review. Existing 24h/7d zeros indicate zero *currently attributed qualifying events*, not proof of zero trading activity. An incomplete venue registry should never be presented as comprehensive.
+**Check collection status:** [Public source health](https://talvoryn.pages.dev/api/health) reports the dataset's last successful check and data-through timestamp. The wallet collection runs in two batches every three hours.
 
 ### Data schedules and transparency
 
@@ -134,7 +139,7 @@ The whale collector's initial exchange allowlist is **not** exhaustive. The orig
 | Integrators | Hourly |
 | Sampled whale activity | Every 3 hours |
 | Historical issuance and burns | Separate archival reconstruction |
-| Catalyst source discovery | Hourly job code added; deployed execution requires verification |
+| Catalyst source discovery | Hourly |
 
 A successful check is not the same as a new observation. The website's [Data Freshness table](https://talvoryn.pages.dev/methodology.html#freshnessTitle) distinguishes **Data through (UTC)** from **Last successful check (UTC)**.
 
@@ -148,7 +153,7 @@ The research thesis is a standalone Markdown brief designed for both human revie
 
 ## Research you can verify
 
-A useful research figure should be traceable. Talvoryn documents **where it came from, what period it covers, how it was calculated and where the evidence is incomplete**.
+A useful research figure should be traceable. Talvoryn documents **where it came from, the period it covers, its calculation and how to verify the underlying evidence**.
 
 - [Technical Methodology](docs/METHODOLOGY.md) — formulas, research flows, verification rules, worked examples and reproduction steps
 - [Data Sources](docs/DATA_SOURCES.md) — original providers, cutoff definitions and collection schedules
@@ -194,20 +199,13 @@ This test contacts public providers and exercises local disk-backed persistence.
 - **Python scripts:** historical reconstruction and statistical model building
 - **GitHub:** implementation, tests and reproducible methodology
 
-The public Methodology has displayed successful production D1-backed checks for Intents activity, prices, finalised supply, buybacks and integrators. That is evidence of those **recorded successful checks**, not a guarantee of continuous Cron execution. The whale job's two batches completed a manual production catch-up with no pending wallets on 16 November 2026; unattended recurring execution and public display still require separate verification. New Catalyst source-discovery code still requires production deployment and verification.
+Explore the live datasets and collection timestamps using [Data Freshness](https://talvoryn.pages.dev/methodology.html) or the [public source-health API](https://talvoryn.pages.dev/api/health). Published analyses distinguish their observation dates from the time the source was checked.
 
 For the precise setup and verification procedure, see [Architecture](docs/ARCHITECTURE.md). Keep credentials in secret storage, not the repository.
 
-## Research coverage and known limits
+## Verification and research definitions
 
-- Historical issuance/burn reconstruction is incomplete beyond the verified monthly cutoff of **10 November 2026**; daily burn coverage remains incomplete.
-- Wallet analysis represents a monitored sample, **not** a verified network-wide ranking of NEAR holders.
-- A current total-supply observation does not independently prove historical gross issuance or burns.
-- Earlier saved Forecast models may lack a rebuild timestamp; the updated builder records it on future successful builds.
-- Catalyst discovery is not the same as reviewed, published fundamental research.
-- Exact downloadable public research snapshots remain a future improvement.
-
-The original research evidence is preserved. Missing values are not silently replaced with estimates.
+Talvoryn makes research figures inspectable through its [Methodology](https://talvoryn.pages.dev/methodology.html), [Technical Methodology](docs/METHODOLOGY.md) and original source records. Each dataset identifies its date range and source. For reproducible exchange attribution, see the public whale API and its event receipts above. Missing observations are not silently treated as measured zeros.
 
 ---
 
