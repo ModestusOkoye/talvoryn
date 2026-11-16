@@ -78,7 +78,7 @@ async function refresh(){
    }
    items=[...merged.values()];
    render();
-   status.textContent=live.length?'Verified sources · published and live records':'Verified sources · saved records';
+   status.textContent='';
  }catch{
    status.textContent='Catalyst update unavailable';if(!items.length)render();
  }finally{busy=false;refreshButton.disabled=false}
