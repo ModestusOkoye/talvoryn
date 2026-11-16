@@ -76,7 +76,7 @@ export async function collectWhaleHistory(previous,fastnearKey=null){
    // Always prefer FastNEAR, unless resuming an unfinished NearBlocks page.
    if(!complete&&!nativeOnly&&!limited&&requests<MAX_TRANSFER_REQUESTS){
     try{
-     for(let page=0;page<2;page++){
+     for(let page=0;page<1;page++){
       if(requests>=MAX_TRANSFER_REQUESTS)break;
       requests++;
       const d=await transfers({account_id:w.account,ignore_system:true,from_timestamp_ms:from,to_timestamp_ms:to,limit:100,desc:true,...(cursor?{resume_token:cursor}:{})},fastnearKey);
