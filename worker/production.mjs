@@ -1,6 +1,7 @@
 import {read,write,status,health} from './storage.mjs';
 import {collectWhaleHistory,diagnoseWhaleTransfer} from './whales.mjs';
-import {beginWhaleDiscovery,advanceWhaleDiscovery,whaleDiscoverySummary,rankedWhaleCandidates} from './whale-discovery-backfill.mjs';
+import {beginWhaleDiscovery,advanceWhaleDiscoveryStored,whaleDiscoverySummary} from './whale-discovery-backfill.mjs';
+import {openWhaleDiscoveryStore,saveWhaleDiscoveryInitial,commitWhaleDiscoveryPage,whaleDiscoveryCandidateSummary,listWhaleDiscoveryCandidates} from './whale-discovery-store.mjs';
 import {EXCHANGE_REGISTRY} from './exchange-flows.mjs';
 import {discoverCatalysts} from './catalyst-discovery.mjs';
 import {reviewCatalyst} from './catalyst-review.mjs';
@@ -97,18 +98,17 @@ if(req.method==='GET'&&u.pathname==='/data/source-status.json')return reply({mod
 if(u.pathname.startsWith('/api/admin/')){if(!env.OWNER_API_TOKEN||req.headers.get('Authorization')!=='Bearer '+env.OWNER_API_TOKEN)return reply({error:'Unauthorized'},401);if(req.method!=='POST')return reply({error:'Use POST'},405);if(u.pathname==='/api/admin/whale-discovery-backfill'){
  const mode=u.searchParams.get('mode')||'status';
  if(!['status','advance','candidates'].includes(mode))return reply({error:'Unknown discovery mode'},400);
- const dataset='whale-discovery-backfill';
- if(mode==='status')return reply(whaleDiscoverySummary(await read(env.DB,dataset)));
- if(mode==='candidates'){const state=await read(env.DB,dataset);return reply({summary:whaleDiscoverySummary(state),candidates:rankedWhaleCandidates(state,100)});}
- if(!env.FASTNEAR_API_KEY)return reply({error:'FastNEAR key unavailable'},503);
- // Independent short-lived lease stops overlapping backfill calls from losing checkpoints.
+ if(mode==='advance'&&!env.FASTNEAR_API_KEY)return reply({error:'FastNEAR key unavailable'},503);
+ // Separate owner-only lease protects migration and page checkpoint state.
  const leaseToken=crypto.randomUUID(),clock=Date.now();
  const lease=await env.DB.prepare('INSERT INTO leases(name,token,expires) VALUES(?,?,?) ON CONFLICT(name) DO UPDATE SET token=excluded.token,expires=excluded.expires WHERE leases.expires<?')
   .bind('whale-discovery',leaseToken,clock+120000,clock).run();
  if(!lease.meta.changes)return reply({error:'Discovery already running'},409);
  try {
-  let state=await read(env.DB,dataset);
-  if(!state){const whales=await read(env.DB,'whales');if(!whales?.roster)throw Error('Whale cohort missing');state=beginWhaleDiscovery(whales.roster,EXCHANGE_REGISTRY);}
+  let state=await openWhaleDiscoveryStore(env.DB);
+  if(mode==='status')return reply({...whaleDiscoverySummary(state),...await whaleDiscoveryCandidateSummary(env.DB,state)});
+  if(mode==='candidates')return reply({summary:{...whaleDiscoverySummary(state),...await whaleDiscoveryCandidateSummary(env.DB,state)},candidates:await listWhaleDiscoveryCandidates(env.DB,100)});
+  if(!state){const whales=await read(env.DB,'whales');if(!whales?.roster)throw Error('Whale cohort missing');const initial=beginWhaleDiscovery(whales.roster,EXCHANGE_REGISTRY);const {candidates,...rest}=initial;state={...rest,revision:2,storage:'D1_rows'};await saveWhaleDiscoveryInitial(env.DB,state);}
   const knownAccounts=[...EXCHANGE_REGISTRY.cex,...EXCHANGE_REGISTRY.dex].map(x=>x.account);
   const fetchPage=async body=>{
    const r=await fetch('https://transfers.main.fastnear.com/v0/transfers',{method:'POST',
@@ -117,10 +117,10 @@ if(u.pathname.startsWith('/api/admin/')){if(!env.OWNER_API_TOKEN||req.headers.ge
    if(!r.ok)throw Error('Source HTTP '+r.status);
    return r.json();
   };
-  const next=await advanceWhaleDiscovery(state,{fetchPage,knownAccounts,pageLimit:20});
+  const next=await advanceWhaleDiscoveryStored(state,{fetchPage,knownAccounts,pageLimit:20,
+   commitPage:(checkpoint,transfers,wallet,known)=>commitWhaleDiscoveryPage(env.DB,checkpoint,transfers,wallet,known)});
   const {requestsThisRun,...persisted}=next;
-  await write(env.DB,dataset,persisted,new Date(persisted.to).toISOString());
-  return reply({...whaleDiscoverySummary(persisted),requestsThisRun});
+  return reply({...whaleDiscoverySummary(persisted),...await whaleDiscoveryCandidateSummary(env.DB,persisted),requestsThisRun});
  }finally{await env.DB.prepare('DELETE FROM leases WHERE name=? AND token=?').bind('whale-discovery',leaseToken).run();}
 }
 if(u.pathname==='/api/admin/catalyst-review'){
