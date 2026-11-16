@@ -112,6 +112,17 @@ The monitoring cohort contains **48 existing verified wallets**, not a network-w
 
 **Configuration note:** The owner-local `wrangler.worker.jsonc` is not committed to the repository and must retain all three cron entries on future deploys. The existing hourly refresh is unchanged. Automated tests validate batching and request-limit enforcement; monitor consecutive unattended cycles and public data freshness before claiming ongoing reliability.
 
+### Counterparty discovery and exchange verification
+
+The whale collector's initial exchange allowlist is **not** exhaustive. The original version discarded transfer records involving unknown counterparties before they could be investigated. A candidate-discovery path now examines those counterparties in the **same FastNEAR transfer pages** already fetched for the 48 monitored wallets. It stores a bounded candidate list with observed wallet relationships, asset types, sample receipt IDs, and first/last seen timestamps, without adding provider calls.
+
+**Important distinction:** A discovered counterparty is **not** thereby a CEX deposit address, a DEX contract, or evidence of a trade. Unknown candidates remain `unverified` and do not alter the displayed accumulation totals. A promotion into the exchange allowlist requires independent, reproducible evidence:
+- **CEX:** documented exchange ownership of the exact NEAR address (or corroborated, manually reviewed exchange attribution). An exchange-looking name or repeated transfers alone does not establish custody.
+- **DEX:** evidence that the account is a relevant on-chain contract, plus a successful swap tied to the exact transfer/receipt and traded NEAR or wNEAR amount. Contract deployment by itself proves neither DEX status nor a swap.
+- **Other flows:** ordinary transfers, bridges, staking, internal movements and unresolved counterparties do not automatically count as buys or sells.
+
+**Coverage caveat:** The initial verified historical ledger retains only counterparties in the earlier allowlist. The new candidate collector is **forward-looking from deployment** and cannot retroactively recover unknown counterparties filtered out of previous FastNEAR pages. Full historical exchange discovery requires a separate controlled, credit-budgeted backfill and review. Existing 24h/7d zeros indicate zero *currently attributed qualifying events*, not proof of zero trading activity. An incomplete venue registry should never be presented as comprehensive.
+
 ### Data schedules and transparency
 
 | Dataset | Collection/check schedule |
