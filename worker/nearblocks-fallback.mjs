@@ -23,6 +23,7 @@ export async function fetchNearBlocksWindow(account,from,to,prior={},maxPages=3)
   if(!/^[a-z0-9._-]{2,64}$/.test(account))throw Error('Invalid NEAR account');
   const rows=Array.isArray(prior.rows)?prior.rows:[],next=prior.next??null;
   let cursor=next,lastCursor=null,complete=false,pages=0;
+  try {
   for(;pages<maxPages;pages++){
     const url=new URL(ENDPOINT+encodeURIComponent(account)+'/receipts');
     url.searchParams.set('limit','25');
@@ -47,5 +48,6 @@ export async function fetchNearBlocksWindow(account,from,to,prior={},maxPages=3)
     lastCursor=cursor;cursor=payload.meta.next_page;
     if(cursor===lastCursor)throw Error('NearBlocks repeated cursor');
   }
+  } catch(error) { error.checkpoint={rows,next:cursor}; throw error; }
   return {rows,next:cursor,complete,pages};
 }
