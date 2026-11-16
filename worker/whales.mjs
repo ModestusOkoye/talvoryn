@@ -5,8 +5,9 @@ export const excludedWhale=a=>!a||knownExchangeAccount(a)||nonWallet.test(a)||/^
 const nearUnits=n=>Number(BigInt(n||0)/1000000000000000000n)/1e6;
 export function whaleFlows(wallets,rows,from,to,finalHeight,proofs=new Map()){const cohort=new Set(wallets.map(w=>w.account)),totals=new Map(wallets.map(w=>[w.account,{...w,inflow:0,outflow:0}])),seen=new Set();for(const r of rows){if(!cohort.has(r.account_id)||r.asset_type!=='Near'&&!(r.asset_type==='Ft'&&['wrap.near','nep141:wrap.near'].includes(r.asset_id)))continue;const t=Number(BigInt(r.block_timestamp)/1000000n);if(t<from||t>=to||BigInt(r.block_height)>BigInt(finalHeight))continue;if(cohort.has(r.other_account_id)||!r.other_account_id||r.other_account_id==='system'||r.other_account_id==='wrap.near'||/poolv1\.near$/.test(r.other_account_id))continue;const id=r.account_id+':'+r.receipt_id+':'+r.transfer_index;if(seen.has(id))continue;seen.add(id);if(!exchangeTransfer(r,proofs))continue;const amount=nearUnits(r.amount),w=totals.get(r.account_id);if(amount>0)w.inflow+=amount;else w.outflow-=amount}const list=[...totals.values()].map(w=>({...w,net:w.inflow-w.outflow})),incoming=list.reduce((n,w)=>n+w.inflow,0),outgoing=list.reduce((n,w)=>n+w.outflow,0),total=incoming+outgoing;return {wallets:list,incoming,outgoing,net:incoming-outgoing,score:total>=1?Math.round(100*incoming/total):null,label:total<1?'No qualifying movement':incoming/total>.6?'More inflows':incoming/total<.4?'More outflows':'Neutral'}}
 async function whaleJSON(url,options={}){let error;for(let attempt=0;attempt<2;attempt++){try{const r=await fetch(url,{...options,headers:{Accept:'application/json',...options.headers},signal:AbortSignal.timeout(10000)});if(!r.ok){const e=Error('Source HTTP '+r.status);e.rateLimited=r.status===429;throw e;}return await r.json()}catch(e){error=e;if(e.rateLimited)break}}throw error}
-async function whaleRPC(method,params){const d=await whaleJSON('https://free.rpc.fastnear.com',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:'whale',method,params})});if(d.error)throw Error('RPC unavailable');return d.result}
-async function transfers(body){return whaleJSON('https://transfers.main.fastnear.com/v0/transfers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})}
+const fastnearAuth=key=>key?{Authorization:'Bearer '+key}:{};
+async function whaleRPC(method,params,key){const d=await whaleJSON(key?'https://rpc.mainnet.fastnear.com':'https://free.rpc.fastnear.com',{method:'POST',headers:{'Content-Type':'application/json',...fastnearAuth(key)},body:JSON.stringify({jsonrpc:'2.0',id:'whale',method,params})});if(d.error)throw Error('RPC unavailable');return d.result}
+async function transfers(body,key){return whaleJSON('https://transfers.main.fastnear.com/v0/transfers',{method:'POST',headers:{'Content-Type':'application/json',...fastnearAuth(key)},body:JSON.stringify(body)})}
 export async function collectWhales(previous){
  const checkedAt=new Date().toISOString(),to=Date.now(),from=Date.parse(checkedAt.slice(0,10)+'T00:00:00Z');
  try{
@@ -54,11 +55,11 @@ export function mergeWhaleHistory(previous,next){
  const ledger=(old.ledger||[]).filter(e=>{const w=fresh.get(e.account);return cohort.has(e.account)&&(!w||Date.parse(e.timestamp)<Date.parse(w.refreshedFrom)||(w.nativeOnly&&e.venueType==='DEX'))});ledger.push(...(next.ledger||[]));
  return whalePeriods({...old,...next,roster,wallets:[...wallets.values()],ledger},Date.parse(next.through));
 }
-export async function collectWhaleHistory(previous){
+export async function collectWhaleHistory(previous,fastnearKey=null){
  const now=Date.now(),through=new Date(now).toISOString(),start=now-30*WHALE_DAY;
  try{
-  const final=await whaleRPC('block',{finality:'final'});let roster=(previous.roster||[]).filter(w=>!excludedWhale(w.account));
-  for(const w of roster.filter(w=>w.verifiedDate!==through.slice(0,10)).slice(0,3)){try{const v=await whaleRPC('query',{request_type:'view_account',finality:'final',account_id:w.account}),balance=nearUnits(v.amount);if(v.code_hash!=='11111111111111111111111111111111'||balance<100000)roster=roster.filter(x=>x.account!==w.account);else Object.assign(w,{balance,codeHash:v.code_hash,verifiedDate:through.slice(0,10),balanceBlock:v.block_height})}catch{}}
+  const final=await whaleRPC('block',{finality:'final'},fastnearKey);let roster=(previous.roster||[]).filter(w=>!excludedWhale(w.account));
+  for(const w of roster.filter(w=>w.verifiedDate!==through.slice(0,10)).slice(0,3)){try{const v=await whaleRPC('query',{request_type:'view_account',finality:'final',account_id:w.account},fastnearKey),balance=nearUnits(v.amount);if(v.code_hash!=='11111111111111111111111111111111'||balance<100000)roster=roster.filter(x=>x.account!==w.account);else Object.assign(w,{balance,codeHash:v.code_hash,verifiedDate:through.slice(0,10),balanceBlock:v.block_height})}catch{}}
   const old=new Map((previous.wallets||[]).map(w=>[w.account,w])),flowCursor=(previous.flowCursor||0)%Math.max(1,roster.length),rotated=[...roster.slice(flowCursor),...roster.slice(0,flowCursor)],ordered=[...rotated.filter(w=>!old.has(w.account)),...rotated.filter(w=>old.has(w.account))],pendingHistory=structuredClone(previous.pendingHistory||{});
   const fresh=[],ledger=[],cohort=new Set(roster.map(w=>w.account));let requests=0,limited=false,proofRequests=0,backupPages=0,backupWallets=0;const txCache=new Map();
   for(const w of ordered.slice(0,10)){
@@ -75,7 +76,7 @@ export async function collectWhaleHistory(previous){
      for(let page=0;page<6;page++){
       if(requests>=14)break;
       requests++;
-      const d=await transfers({account_id:w.account,ignore_system:true,from_timestamp_ms:from,to_timestamp_ms:to,limit:100,desc:true,...(cursor?{resume_token:cursor}:{})});
+      const d=await transfers({account_id:w.account,ignore_system:true,from_timestamp_ms:from,to_timestamp_ms:to,limit:100,desc:true,...(cursor?{resume_token:cursor}:{})},fastnearKey);
       if(!Array.isArray(d.transfers))throw Error('Invalid FastNEAR transfer page');
       rows.push(...d.transfers.filter(r=>knownExchangeAccount(r.other_account_id)));
       cursor=d.resume_token;
@@ -107,7 +108,7 @@ export async function collectWhaleHistory(previous){
    }
    delete pendingHistory[w.account];
    const proofs=new Map(pending?.proofDecisions||[]);let unverifiedDexTransfers=0;
-   for(const r of rows){if(!dexAccount(r.other_account_id)||r.asset_type!=='Ft'||r.transfer_type!=='FtTransfer'||!['wrap.near','nep141:wrap.near'].includes(r.asset_id)||proofs.has(transferId(r)))continue;const k=r.transaction_id+':'+r.signer_id;let tx=txCache.get(k);if(!txCache.has(k)&&proofRequests<3&&r.transaction_id&&r.signer_id){proofRequests++;try{tx=await whaleRPC('EXPERIMENTAL_tx_status',{tx_hash:r.transaction_id,sender_account_id:r.signer_id,wait_until:'FINAL'})}catch{tx=null}txCache.set(k,tx)}if(tx)proofs.set(transferId(r),proveDexTransfer(r,tx));else unverifiedDexTransfers++;}
+   for(const r of rows){if(!dexAccount(r.other_account_id)||r.asset_type!=='Ft'||r.transfer_type!=='FtTransfer'||!['wrap.near','nep141:wrap.near'].includes(r.asset_id)||proofs.has(transferId(r)))continue;const k=r.transaction_id+':'+r.signer_id;let tx=txCache.get(k);if(!txCache.has(k)&&proofRequests<3&&r.transaction_id&&r.signer_id){proofRequests++;try{tx=await whaleRPC('EXPERIMENTAL_tx_status',{tx_hash:r.transaction_id,sender_account_id:r.signer_id,wait_until:'FINAL'},fastnearKey)}catch{tx=null}txCache.set(k,tx)}if(tx)proofs.set(transferId(r),proveDexTransfer(r,tx));else unverifiedDexTransfers++;}
    if(unverifiedDexTransfers){pendingHistory[w.account]={from,to,rows,downloadComplete:true,proofDecisions:[...proofs]};continue;}
    const seen=new Set();for(const r of rows){if(cohort.has(r.other_account_id))continue;const t=Number(BigInt(r.block_timestamp)/1000000n);if(t<from||t>=to||BigInt(r.block_height)>BigInt(final.header.height))continue;const evidence=exchangeTransfer(r,proofs),id=transferId(r);if(!evidence||seen.has(id))continue;seen.add(id);ledger.push({...evidence,id,account:r.account_id,counterparty:r.other_account_id,amount:nearUnits(r.amount),receipt:r.receipt_id,transaction:r.transaction_id,asset:r.asset_id,timestamp:new Date(t).toISOString(),block:r.block_height})}
    fresh.push({...w,nativeOnly,historyFrom:prior&&Date.parse(prior.historyFrom)<=start?prior.historyFrom:new Date(start).toISOString(),refreshedFrom:new Date(from).toISOString(),observedThrough:new Date(to).toISOString(),unverifiedDexTransfers:0});
