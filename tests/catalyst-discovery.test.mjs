@@ -28,6 +28,6 @@ try {
  assert.equal(again.pending.length,3,'Stable IDs prevent duplicates when sources update');
  const reviewed=await discoverCatalysts({...again,pending:again.pending.slice(1),reviewedIds:[again.pending[0].id]});
  assert.equal(reviewed.pending.length,2,'Reviewed candidates do not reappear');
- assert.equal(calls.length,12);
+ assert.equal(calls.length,10,'A recent successful GitHub check is reused for six hours');
  console.log('Source discovery, official count extraction and stable deduplication passed.');
 }finally {globalThis.fetch=original}
