@@ -5,6 +5,7 @@ on:
       - 'worker/catalyst-*.mjs'
       - 'worker/production.mjs'
       - 'tests/catalyst-*.test.mjs'
+      - 'tests/whale-rate-limit.test.mjs'
       - '.github/workflows/test-catalysts.yml'
   workflow_dispatch:
 permissions:
@@ -26,4 +27,4 @@ jobs:
           node --check worker/catalyst-x.mjs
           node --check dist/economic-catalysts.js
       - name: Test discovery, review and source gating
-        run: node --test tests/catalyst-discovery.test.mjs tests/catalyst-review.test.mjs tests/catalyst-impact.test.mjs tests/catalyst-x.test.mjs
+        run: node --test tests/catalyst-discovery.test.mjs tests/catalyst-review.test.mjs tests/catalyst-impact.test.mjs tests/catalyst-x.test.mjs tests/whale-rate-limit.test.mjs
