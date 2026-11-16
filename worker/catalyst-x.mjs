@@ -1,6 +1,6 @@
 // Owner-supplied X API: strictly bounded, source-backed discovery, never autopublished.
 // Reuses the original Talvoryn query and 50 requested-posts/day budget.
-const topic=/\b(near|intents|hackathon|builder|mainnet|launch|integrat|adopt|volum|revenue|buyback|inflation|issuance|fee|burn|upgrade|proposal|partnership|security|incident|wallet|agent|privacy|funding)\b/i;
+const topic=/\b(?:near|intents?|hackathons?|builders?|projects?|submissions?|finalists?|mainnet|launch(?:es|ed|ing)?|live|releas(?:e|ed)|integrat(?:e|ed|ion|ions|ing)|adopt(?:ion|ed)?|volum(?:e|es)|revenues?|buybacks?|inflation|issuance|fees?|burns?|upgrades?|proposals?|partner(?:ship|ships|ed|s)?|security|incident|wallets?|agents?|privacy|grants?|funding|bounties|demo day|deadline|payments?)\b/i;
 const iso=()=>new Date().toISOString();
 export async function collectXCatalysts(prior={},token,at=iso()){
  const day=at.slice(0,10);
@@ -24,7 +24,7 @@ export async function collectXCatalysts(prior={},token,at=iso()){
    if(newest===null||BigInt(p.id)>BigInt(newest))newest=p.id;
    if(oldIds.has(p.id))continue;
    oldIds.add(p.id);
-   if(!topic.test(p.text))continue;
+   if(!topic.test(p.text)&&!p.referenced_tweets?.some(x=>x.type==='replied_to'))continue;
    const text=p.text.trim().slice(0,1000);
    found.push({id:'x:'+p.id,title:text.slice(0,180),url:'https://x.com/i/web/status/'+p.id,
     source:'X · watched NEAR accounts',observedAt:p.created_at||at,status:'Team post — source review needed',
