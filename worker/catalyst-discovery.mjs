@@ -57,9 +57,12 @@ export async function discoverCatalysts(previous={}){
   return {items:found};
  });
  await run('hackathon',async()=>{
-  const page=await request('https://nearhackathon.com/','html');
-  const total=extractHackathonCount(page);if(total===null)throw Error('Official directory did not expose a verifiable count to the Worker (possible bot page or changed markup)');
-  return {items:[],meta:{total,definition:'Public project submissions; not verified launches or unique developers',url:'https://nearhackathon.com/#projects'}};
+  // Use the canonical JSON endpoint from the original Talvoryn collector.
+  // The human-facing page can return a bot/JS placeholder to Workers.
+  const d=await request('https://nearhackathon.com/api/projects?page=1');
+  if(d.preview||!Number.isInteger(d.total)||d.total<0||!Array.isArray(d.projects)||d.projects.length>100)
+   throw Error('Official project directory returned an invalid or preview response');
+  return {items:[],meta:{total:d.total,pageSize:d.pageSize,definition:'Public project submissions; not verified launches or unique developers',url:'https://nearhackathon.com/#projects',api:'https://nearhackathon.com/api/projects?page=1'}};
  });
  const existing=new Map((previous.pending||[]).filter(good).map(x=>[x.id,x]));
  const reviewed=new Set(previous.reviewedIds||[]);
