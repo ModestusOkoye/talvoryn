@@ -1,8 +1,8 @@
 // Independent, bounded, source-backed discovery. Nothing here auto-publishes a catalyst.
 const matchTopic=/(issuance|emissions?|inflation|buybacks?|revenue|fees?|burns?|tokenomics|intents?|chain signatures?|MPC|sharding|privacy|confidential|AI agents?|validators?|governance|upgrades?|security|integrations?|partnerships?|hackathon)/i;
 const now=()=>new Date().toISOString();
-async function request(url,as='json'){
- const response=await fetch(url,{headers:{Accept:as==='json'?'application/json':'text/html','User-Agent':'Talvoryn-SourceMonitor'},signal:AbortSignal.timeout(12000)});
+async function request(url,as='json',extraHeaders={}){
+ const response=await fetch(url,{headers:{Accept:as==='json'?'application/json':'text/html','User-Agent':'Talvoryn-SourceMonitor',...extraHeaders},signal:AbortSignal.timeout(12000)});
  if(!response.ok)throw Error('HTTP '+response.status);
  const body=await response.text();
  if(body.length>1500000)throw Error('Oversized source payload');
@@ -33,7 +33,7 @@ export function extractBlogLinks(html){
  }
  return [...found.values()].slice(0,20);
 }
-export async function discoverCatalysts(previous={}){
+export async function discoverCatalysts(previous={},options={}){
  const observations=[],errors={},sources={};
  async function run(name,fn){try{const outcome=await fn();observations.push(...(outcome.items||[]));sources[name]={ok:true,checkedAt:now(),...(outcome.meta||{})}}catch(e){errors[name]=String(e.message).slice(0,160);sources[name]={ok:false,error:errors[name]}}}
  await run('governance',async()=>{
@@ -43,8 +43,13 @@ export async function discoverCatalysts(previous={}){
    id:'forum:'+t.id,title:clean(t.title).slice(0,180),url:'https://gov.near.org/t/'+t.id,
    source:'NEAR Governance',observedAt:t.bumped_at||t.last_posted_at||t.created_at,status:'Proposed — review pending',type:'proposal'}))};
  });
- await run('github',async()=>{
-  const d=await request('https://api.github.com/repos/near/NEPs/pulls?state=all&sort=updated&direction=desc&per_page=30');
+ const lastGitHub=previous.sources?.github;
+ // Successful NEP checks are useful for six hours; avoid burning shared unauthenticated API quota hourly.
+ if(lastGitHub?.ok&&lastGitHub.checkedAt&&Date.now()-Date.parse(lastGitHub.checkedAt)<6*3600000){
+  sources.github={...lastGitHub,reused:true};
+ }else await run('github',async()=>{
+  const headers=options.githubToken?{Authorization:'Bearer '+options.githubToken}:{};
+  const d=await request('https://api.github.com/repos/near/NEPs/pulls?state=all&sort=updated&direction=desc&per_page=30','json',headers);
   if(!Array.isArray(d))throw Error('Missing pull requests');
   return {items:d.filter(p=>matchTopic.test(p.title||'')).slice(0,12).map(p=>({
    id:'github:near/NEPs:'+p.number,title:clean(p.title).slice(0,180),url:p.html_url,
