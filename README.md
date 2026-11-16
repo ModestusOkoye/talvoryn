@@ -100,7 +100,7 @@ The monitoring cohort contains **48 existing verified wallets**, not a network-w
 
 **Failure identified on 16 November 2026:** Cloudflare Workers Free permits **50 external subrequests per invocation** (see [Cloudflare's official Workers limits](https://developers.cloudflare.com/workers/platform/limits/)). The earlier whale job allowed **up to 60 FastNEAR transfer queries**, *plus* RPC checks, retries and NearBlocks calls. This exceeded the available per-invocation envelope. Saved failures included eight generic FastNEAR/backup errors and two additional-page checkpoints. Exceeding the Worker limit is a strongly supported root-cause explanation, but it has not been independently proven for every historical error.
 
-**Recovery architecture (implemented in source and tested; requires production deployment and trigger configuration):**
+**Recovery architecture (deployed and manually verified on 16 November 2026):**
 
 - Divide the same 48-wallet roster deterministically into two 24-wallet batches. Run at **minute 17 and minute 27**, every three hours, as separate Cloudflare Worker invocations. Both batches make up one monitoring cycle.
 - Impose a **46-external-fetch hard ceiling per invocation**, covering FastNEAR RPC, indexed transfers, retries and NearBlocks; leave headroom under Cloudflare's 50-request Free cap. FastNEAR transfer pagination has a separate 30-request ceiling per batch.
@@ -108,7 +108,9 @@ The monitoring cohort contains **48 existing verified wallets**, not a network-w
 - Use NearBlocks only after a real FastNEAR failure. Its native-transfer receipts do **not** establish complete DEX/wNEAR coverage.
 - Keep old verified data and identify unfinished windows; never mark partial coverage as zero or complete.
 
-**Configuration note:** The owner-local `wrangler.worker.jsonc` is not committed to the repository. Its `triggers.crons` must include `7 * * * *`, `17 */3 * * *` **and** `27 */3 * * *` before the second batch is live. The existing hourly refresh is unchanged. Tests verify the two-batch processing and limit enforcement; they do not establish live coverage or successful Cron execution. Verify production health and both batch runs after deployment.
+**Production verification, 16 November 2026 (UTC):** Worker version `b6166cb3-fb65-4418-a00f-1f5271f93e0d` reported all three configured cron triggers (`7 * * * *`, `17 */3 * * *`, `27 */3 * * *`). Manual authenticated Batch 1 returned `batchIndex: 0`, 24 transfer requests, 28 total external requests, and 3 pending wallets. Manual Batch 2 returned `batchIndex: 1`, 24 transfer requests, 28 total external requests, **48 covered / 48 total wallets, 0 pending wallets, 0 rate-limit reports, and 0 partial wallets**. Its dataset check time was `2026-11-16T18:30:50.159Z`, with oldest recorded wallet observation `2026-11-16T18:17:57.134Z`. The reported `freshWallets: 44` uses a three-minute window relative to the second batch's check, so is **not** the combined-cycle count. These are point-in-time production ingestion results, **not** independent validation of every published transfer classification, the public UI, or unattended future cron execution.
+
+**Configuration note:** The owner-local `wrangler.worker.jsonc` is not committed to the repository and must retain all three cron entries on future deploys. The existing hourly refresh is unchanged. Automated tests validate batching and request-limit enforcement; monitor consecutive unattended cycles and public data freshness before claiming ongoing reliability.
 
 ### Data schedules and transparency
 
@@ -181,7 +183,7 @@ This test contacts public providers and exercises local disk-backed persistence.
 - **Python scripts:** historical reconstruction and statistical model building
 - **GitHub:** implementation, tests and reproducible methodology
 
-The public Methodology has displayed successful production D1-backed checks for Intents activity, prices, finalised supply, buybacks and integrators. That is evidence of those **recorded successful checks**, not a guarantee of continuous Cron execution. The separate whale job has not yet displayed successful status. New Catalyst source-discovery code still requires production deployment and verification.
+The public Methodology has displayed successful production D1-backed checks for Intents activity, prices, finalised supply, buybacks and integrators. That is evidence of those **recorded successful checks**, not a guarantee of continuous Cron execution. The whale job's two batches completed a manual production catch-up with no pending wallets on 16 November 2026; unattended recurring execution and public display still require separate verification. New Catalyst source-discovery code still requires production deployment and verification.
 
 For the precise setup and verification procedure, see [Architecture](docs/ARCHITECTURE.md). Keep credentials in secret storage, not the repository.
 
