@@ -25,6 +25,6 @@ try{
   assert.equal(result.ledger.length,1,'Prior verified event must survive a partial refresh');
   assert.equal(result.ledger[0].id,'prior');
   assert.equal(result.wallets.length,1,'Prior verified wallet coverage is retained');
-  assert.equal(result.periods.M.complete,false,'Do not claim newly incomplete coverage is complete');
+  assert.equal(result.periods.M.through,previous.wallets[0].observedThrough,'Common verified cutoff must not advance on failed requests');
   console.log('PASS: 429 keeps the resume cursor, verified ledger and wallet sample.');
 }finally{globalThis.fetch=original}
