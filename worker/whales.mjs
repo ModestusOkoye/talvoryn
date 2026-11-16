@@ -125,3 +125,33 @@ export async function collectWhaleHistory(previous,fastnearKey=null){
   return mergeWhaleHistory(previous,{roster,wallets:fresh,ledger,through,flowCursor:0,pendingHistory,checkedAt:through,sourceRateLimited:limited,backupWallets,transferRequests:requests,threshold:100000,method:'Rolling 24 hours, 7 days and 30 days for the same present-day whale sample. Published CEX movements and receipt-proven DEX swaps only. No ordinary wallet transfers. Historical events do not imply the account met the whale threshold at the event time. Saved wallet histories retain their actual observation times.'});
  }catch(e){return {...whalePeriods(previous,now),ok:false,error:e.message,attemptedAt:through}}
 }
+
+/** Single-request, owner-only schema probe; no changes to D1 and no secret data in output. */
+export async function diagnoseWhaleTransfer(previous,fastnearKey){
+ if(!fastnearKey)return {ok:false,reason:'FastNEAR key not configured'};
+ const entries=Object.entries(previous?.pendingHistory||{});
+ const item=entries.find(([account,p])=>previous.roster?.some(w=>w.account===account)&&p.provider==='fastnear'&&['Error','invalid_transfer_response'].includes(p.reason))
+   ||entries.find(([account,p])=>previous.roster?.some(w=>w.account===account)&&p.provider==='fastnear');
+ if(!item)return {ok:false,reason:'No eligible pending FastNEAR wallet'};
+ const [account,p]=item;
+ const body={account_id:account,ignore_system:true,from_timestamp_ms:p.from,to_timestamp_ms:p.to,limit:100,desc:true,...(p.cursor?{resume_token:p.cursor}:{})};
+ try{
+  const response=await fetch('https://transfers.main.fastnear.com/v0/transfers',{
+   method:'POST',headers:{Accept:'application/json','Content-Type':'application/json',...fastnearAuth(fastnearKey)},
+   body:JSON.stringify(body),signal:AbortSignal.timeout(10000)
+  });
+  const contentType=response.headers.get('content-type')||'';
+  const data=contentType.includes('json')?await response.json().catch(()=>null):null;
+  const keys=data&&typeof data==='object'&&!Array.isArray(data)?Object.keys(data).slice(0,12):[];
+  const error=data?.error;
+  return {ok:response.ok&&Array.isArray(data?.transfers),httpStatus:response.status,
+   contentType:contentType.slice(0,64),responseKeys:keys,transfersArray:Array.isArray(data?.transfers),
+   transfersCount:Array.isArray(data?.transfers)?data.transfers.length:null,
+   hasResumeToken:!!data?.resume_token,
+   errorType:error==null?null:Array.isArray(error)?'array':typeof error,
+   errorKeys:error&&typeof error==='object'?Object.keys(error).slice(0,8):[],
+   errorCode:typeof error?.code==='number'?error.code:null,
+   // Names and durations only; no account IDs, response bodies, tokens, or private data.
+   pendingReason:p.reason||'unknown'};
+ }catch(e){return {ok:false,networkError:['TimeoutError','AbortError'].includes(e.name)?'timeout':e.name==='TypeError'?'network_error':'unexpected_error'};}
+}
