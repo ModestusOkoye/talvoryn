@@ -86,12 +86,12 @@ export async function collectWhaleHistory(previous,fastnearKey=null){
       if(requests>=MAX_TRANSFER_REQUESTS||page>0&&requests+remainingWallets>=MAX_TRANSFER_REQUESTS)break;
       requests++;
       const d=await transfers({account_id:w.account,ignore_system:true,from_timestamp_ms:from,to_timestamp_ms:to,limit:100,desc:true,...(cursor?{resume_token:cursor}:{})},fastnearKey);
-      if(!Array.isArray(d.transfers))throw Error('Invalid FastNEAR transfer page');
+      if(!Array.isArray(d.transfers)){const err=Error('Invalid FastNEAR transfer page');err.code='invalid_transfer_response';throw err;}
       rows.push(...d.transfers.filter(r=>knownExchangeAccount(r.other_account_id)));
       cursor=d.resume_token;
       if(!cursor){complete=true;break}
      }
-    }catch(e){fastnearFailed=true;fastnearError=e.rateLimited?'rate_limit':e.message?.match(/Source HTTP (\d+)/)?.[0]||e.name||'request_error';if(e.rateLimited)limited=true;}
+    }catch(e){fastnearFailed=true;fastnearError=e.rateLimited?'rate_limit':e.code||(/Source HTTP \d+/.exec(e.message||'')||[])[0]||(['TimeoutError','AbortError'].includes(e.name)?'timeout':e.name==='TypeError'?'network_error':'unknown_error');if(e.rateLimited)limited=true;}
    }
    // When FastNEAR cannot finish, use bounded NearBlocks v3 native receipts.
    // NearBlocks is native-only here: DEX/wNEAR coverage is NOT claimed complete.
@@ -107,7 +107,7 @@ export async function collectWhaleHistory(previous,fastnearKey=null){
       continue;
      }
     }catch(e){
-     pendingHistory[w.account]=e.checkpoint?.next?{from,to,provider:'nearblocks',...e.checkpoint,reason:e.rateLimited?'backup_rate_limit':'backup_error'}:backupCheckpoint?{...backupCheckpoint,reason:e.rateLimited?'backup_rate_limit':'backup_error'}:{from,to,provider:'fastnear',cursor:cursor||null,rows,reason:fastnearError||'backup_error'};
+     pendingHistory[w.account]=e.checkpoint?.next?{from,to,provider:'nearblocks',...e.checkpoint,reason:e.rateLimited?'backup_rate_limit':'backup_error'}:backupCheckpoint?{...backupCheckpoint,reason:e.rateLimited?'backup_rate_limit':'backup_error'}:{from,to,provider:'fastnear',cursor:cursor||null,rows,reason:fastnearError||'backup_error',backupReason:e.rateLimited?'rate_limit':/^NearBlocks HTTP \d+$/.test(e.message||'')?e.message:'backup_request_error'};
      continue;
     }
    }
