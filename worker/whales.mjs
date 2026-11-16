@@ -60,9 +60,12 @@ export async function collectWhaleHistory(previous,fastnearKey=null){
  try{
   const final=await whaleRPC('block',{finality:'final'},fastnearKey);let roster=(previous.roster||[]).filter(w=>!excludedWhale(w.account));
   for(const w of roster.filter(w=>w.verifiedDate!==through.slice(0,10)).slice(0,3)){try{const v=await whaleRPC('query',{request_type:'view_account',finality:'final',account_id:w.account},fastnearKey),balance=nearUnits(v.amount);if(v.code_hash!=='11111111111111111111111111111111'||balance<100000)roster=roster.filter(x=>x.account!==w.account);else Object.assign(w,{balance,codeHash:v.code_hash,verifiedDate:through.slice(0,10),balanceBlock:v.block_height})}catch{}}
-  const old=new Map((previous.wallets||[]).map(w=>[w.account,w])),flowCursor=(previous.flowCursor||0)%Math.max(1,roster.length),rotated=[...roster.slice(flowCursor),...roster.slice(0,flowCursor)],ordered=[...rotated.filter(w=>!old.has(w.account)),...rotated.filter(w=>old.has(w.account))],pendingHistory=structuredClone(previous.pendingHistory||{});
-  const fresh=[],ledger=[],cohort=new Set(roster.map(w=>w.account));let requests=0,limited=false,proofRequests=0,backupPages=0,backupWallets=0;const txCache=new Map();
-  for(const w of ordered.slice(0,10)){
+  const old=new Map((previous.wallets||[]).map(w=>[w.account,w])),pendingHistory=structuredClone(previous.pendingHistory||{});
+  // Check every wallet on each run. Older checkpoints first, then pending pages.
+  // Narrow each query to the wallet's last verified observation; do not rescan 30 days.
+  const ordered=[...roster].sort((a,b)=>(Date.parse(old.get(a.account)?.observedThrough||0)||0)-(Date.parse(old.get(b.account)?.observedThrough||0)||0));
+  const fresh=[],ledger=[],cohort=new Set(roster.map(w=>w.account));let requests=0,limited=false,proofRequests=0,backupPages=0,backupWallets=0;const MAX_TRANSFER_REQUESTS=60;const txCache=new Map();
+  for(const w of ordered){
    const prior=old.get(w.account),pending=pendingHistory[w.account];
    const from=pending?.from??(prior&&Date.parse(prior.historyFrom)<=start?Math.max(start,Date.parse(prior.observedThrough)-60000):start);
    const finalTime=Number(BigInt(final.header.timestamp_nanosec)/1000000n);
@@ -71,10 +74,10 @@ export async function collectWhaleHistory(previous,fastnearKey=null){
    let rows=pending?.provider==='nearblocks'?[]:pending?.rows||[];
    let complete=!!pending?.downloadComplete,nativeOnly=pending?.provider==='nearblocks';
    // Always prefer FastNEAR, unless resuming an unfinished NearBlocks page.
-   if(!complete&&!nativeOnly&&!limited&&requests<14){
+   if(!complete&&!nativeOnly&&!limited&&requests<MAX_TRANSFER_REQUESTS){
     try{
-     for(let page=0;page<6;page++){
-      if(requests>=14)break;
+     for(let page=0;page<2;page++){
+      if(requests>=MAX_TRANSFER_REQUESTS)break;
       requests++;
       const d=await transfers({account_id:w.account,ignore_system:true,from_timestamp_ms:from,to_timestamp_ms:to,limit:100,desc:true,...(cursor?{resume_token:cursor}:{})},fastnearKey);
       if(!Array.isArray(d.transfers))throw Error('Invalid FastNEAR transfer page');
@@ -113,6 +116,6 @@ export async function collectWhaleHistory(previous,fastnearKey=null){
    const seen=new Set();for(const r of rows){if(cohort.has(r.other_account_id))continue;const t=Number(BigInt(r.block_timestamp)/1000000n);if(t<from||t>=to||BigInt(r.block_height)>BigInt(final.header.height))continue;const evidence=exchangeTransfer(r,proofs),id=transferId(r);if(!evidence||seen.has(id))continue;seen.add(id);ledger.push({...evidence,id,account:r.account_id,counterparty:r.other_account_id,amount:nearUnits(r.amount),receipt:r.receipt_id,transaction:r.transaction_id,asset:r.asset_id,timestamp:new Date(t).toISOString(),block:r.block_height})}
    fresh.push({...w,nativeOnly,historyFrom:prior&&Date.parse(prior.historyFrom)<=start?prior.historyFrom:new Date(start).toISOString(),refreshedFrom:new Date(from).toISOString(),observedThrough:new Date(to).toISOString(),unverifiedDexTransfers:0});
   }
-  return mergeWhaleHistory(previous,{roster,wallets:fresh,ledger,through,flowCursor:(flowCursor+10)%Math.max(1,roster.length),pendingHistory,checkedAt:through,sourceRateLimited:limited,backupWallets,threshold:100000,method:'Rolling 24 hours, 7 days and 30 days for the same present-day whale sample. Published CEX movements and receipt-proven DEX swaps only. No ordinary wallet transfers. Historical events do not imply the account met the whale threshold at the event time. Saved wallet histories retain their actual observation times.'});
+  return mergeWhaleHistory(previous,{roster,wallets:fresh,ledger,through,flowCursor:0,pendingHistory,checkedAt:through,sourceRateLimited:limited,backupWallets,transferRequests:requests,threshold:100000,method:'Rolling 24 hours, 7 days and 30 days for the same present-day whale sample. Published CEX movements and receipt-proven DEX swaps only. No ordinary wallet transfers. Historical events do not imply the account met the whale threshold at the event time. Saved wallet histories retain their actual observation times.'});
  }catch(e){return {...whalePeriods(previous,now),ok:false,error:e.message,attemptedAt:through}}
 }
