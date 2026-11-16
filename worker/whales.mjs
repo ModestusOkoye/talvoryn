@@ -1,5 +1,6 @@
 import {EXCHANGE_REGISTRY,knownExchangeAccount,dexAccount,transferId,exchangeTransfer,proveDexTransfer} from './exchange-flows.mjs';
 import {fetchNearBlocksWindow} from './nearblocks-fallback.mjs';
+import {collectCounterpartyCandidates} from './counterparty-discovery.mjs';
 const nonWallet=/(?:^|[.\-_])(binance|coinbase|kraken|okx|kucoin|bybit|huobi|mexc|gate|treasury|foundation|intents|bridge|burrow|ref-finance|ref-labs|sputnik-dao|poolv1|pool|staking|validator|fees|farm|dao|dex|vault|relay)(?:[.\-_]|$)|^(?:wrap\.near|aurora|near|system|buybacks\.multisignature\.near)$/i;
 export const excludedWhale=a=>!a||knownExchangeAccount(a)||nonWallet.test(a)||/^(binance|coinbase|kraken|okx|kucoin|bybit|huobi|mexc|gateio|nfendowment|foundation|contributors|treasury)/i.test(a);
 const nearUnits=n=>Number(BigInt(n||0)/1000000000000000000n)/1e6;
@@ -68,7 +69,7 @@ export async function collectWhaleHistory(previous,fastnearKey=null,{batchIndex=
   if(!Number.isInteger(batchIndex)||!Number.isInteger(batchCount)||batchCount<1||batchIndex<0||batchIndex>=batchCount)throw Error('Invalid whale batch');
   // Stable cohort assignment: each three-hour cycle consists of two Worker invocations.
   const ordered=[...roster].filter((_,index)=>index%batchCount===batchIndex).sort((a,b)=>(Date.parse(old.get(a.account)?.observedThrough||0)||0)-(Date.parse(old.get(b.account)?.observedThrough||0)||0));
-  const fresh=[],ledger=[],cohort=new Set(roster.map(w=>w.account));let requests=0,limited=false,proofRequests=0,backupPages=0,backupWallets=0;const MAX_TRANSFER_REQUESTS=30;const txCache=new Map();
+  const fresh=[],ledger=[],cohort=new Set(roster.map(w=>w.account));let counterpartyCandidates=previous.counterpartyCandidates||[];let requests=0,limited=false,proofRequests=0,backupPages=0,backupWallets=0;const MAX_TRANSFER_REQUESTS=30;const txCache=new Map();
   for(const [walletIndex,w] of ordered.entries()){
    const remainingWallets=ordered.length-walletIndex-1;
    const prior=old.get(w.account),pending=pendingHistory[w.account];
@@ -91,6 +92,8 @@ export async function collectWhaleHistory(previous,fastnearKey=null,{batchIndex=
       requests++;
       const d=await transfers({account_id:w.account,ignore_system:true,from_timestamp_ms:from,to_timestamp_ms:to,limit:100,desc:true,...(cursor?{resume_token:cursor}:{})},fastnearKey,request);
       if(!Array.isArray(d.transfers)){const err=Error('Invalid FastNEAR transfer page');err.code='invalid_transfer_response';throw err;}
+      // Discover unknown counterparties independently; only verified exchange transfers enter the published ledger.
+      counterpartyCandidates=collectCounterpartyCandidates(counterpartyCandidates,d.transfers,w.account,knownExchangeAccount,cohort,now);
       rows.push(...d.transfers.filter(r=>knownExchangeAccount(r.other_account_id)));
       cursor=d.resume_token;
       if(!cursor){complete=true;break}
@@ -126,7 +129,7 @@ export async function collectWhaleHistory(previous,fastnearKey=null,{batchIndex=
    const seen=new Set();for(const r of rows){if(cohort.has(r.other_account_id))continue;const t=Number(BigInt(r.block_timestamp)/1000000n);if(t<from||t>=to||BigInt(r.block_height)>BigInt(final.header.height))continue;const evidence=exchangeTransfer(r,proofs),id=transferId(r);if(!evidence||seen.has(id))continue;seen.add(id);ledger.push({...evidence,id,account:r.account_id,counterparty:r.other_account_id,amount:nearUnits(r.amount),receipt:r.receipt_id,transaction:r.transaction_id,asset:r.asset_id,timestamp:new Date(t).toISOString(),block:r.block_height})}
    fresh.push({...w,nativeOnly,historyFrom:prior&&Date.parse(prior.historyFrom)<=start?prior.historyFrom:new Date(start).toISOString(),refreshedFrom:new Date(from).toISOString(),observedThrough:new Date(to).toISOString(),unverifiedDexTransfers:0});
   }
-  return mergeWhaleHistory(previous,{roster,wallets:fresh,ledger,through,flowCursor:0,pendingHistory,checkedAt:through,sourceRateLimited:limited,backupWallets,transferRequests:requests,externalRequests,batchIndex,batchCount,threshold:100000,method:'Rolling 24 hours, 7 days and 30 days for the same present-day whale sample. Published CEX movements and receipt-proven DEX swaps only. No ordinary wallet transfers. Historical events do not imply the account met the whale threshold at the event time. Saved wallet histories retain their actual observation times.'});
+  return mergeWhaleHistory(previous,{roster,wallets:fresh,ledger,counterpartyCandidates,through,flowCursor:0,pendingHistory,checkedAt:through,sourceRateLimited:limited,backupWallets,transferRequests:requests,externalRequests,batchIndex,batchCount,threshold:100000,method:'Rolling 24 hours, 7 days and 30 days for the same present-day whale sample. Published CEX movements and receipt-proven DEX swaps only. No ordinary wallet transfers. Historical events do not imply the account met the whale threshold at the event time. Saved wallet histories retain their actual observation times.'});
  }catch(e){return {...whalePeriods(previous,now),ok:false,error:e.message,attemptedAt:through}}
 }
 
