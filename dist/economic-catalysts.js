@@ -30,6 +30,33 @@ function renderProjects(item){
    if(!Number.isInteger(d.total)||d.total<0||!d.checkedAt)throw Error('Invalid count');
    tally.textContent=d.total.toLocaleString('en-US')+' public submissions · checked '+new Date(d.checkedAt).toLocaleString('en-GB',{timeZone:'UTC'})+' UTC · not verified launches';
  }).catch(()=>{tally.textContent='Current directory count unavailable — see official source';});
+ const list=document.createElement('div'),nav=document.createElement('div');
+ nav.className='project-pager';
+ const prev=document.createElement('button'),next=document.createElement('button');
+ prev.type='button';next.type='button';prev.textContent='Previous';next.textContent='Next';
+ let n=1,requestId=0;
+ const load=async()=>{
+  const id=++requestId;list.textContent='Loading official project submissions…';
+  try{
+   const response=await fetch('/api/catalysts/projects?page='+n,{cache:'no-store'});
+   if(!response.ok)throw Error('Unavailable');
+   const d=await response.json();if(requestId!==id)return;
+   list.replaceChildren();
+   for(const p of d.projects||[]){
+    const row=document.createElement('p'),a=document.createElement('a');
+    a.textContent=p.project_name;
+    a.href=p.demo_url||'https://nearhackathon.com/#projects';a.target='_blank';a.rel='noopener noreferrer';
+    row.append(a);
+    const small=document.createElement('small');small.textContent=' · '+(p.tracks||[]).map(t=>trackNames[t]||t).join(', ');
+    row.append(small);list.append(row);
+   }
+   prev.disabled=n<=1;next.disabled=n*(d.pageSize||8)>=d.total;
+   tally.textContent=d.total.toLocaleString('en-US')+' submitted projects · page '+n+' · official directory';
+  }catch{list.textContent='Project list unavailable — open the official directory';}
+ };
+ prev.onclick=()=>{if(n>1){n--;load()}};
+ next.onclick=()=>{n++;load()};
+ nav.append(prev,next);box.insertBefore(list,link);box.insertBefore(nav,link);load();
 
 }
 function render(){const railLink=rail?document.querySelector('.catalyst-rail .rail-all'):null;parent.replaceChildren();const selected=items.filter(i=>mode==='all'||i.kind===mode).sort((a,b)=>b.date.localeCompare(a.date));const size=10,pages=Math.max(1,Math.ceil(selected.length/size));page=Math.min(page,pages);for(const item of selected.slice((page-1)*size,page*size)){const button=document.createElement('button');button.type='button';button.className=rail?'rail-item':'economic-item';const title=document.createElement('span');title.className='economic-title';title.textContent=item.title;button.append(title);if(!rail){const meta=document.createElement('small');meta.className='economic-meta';meta.textContent=item.date+' · '+item.status;button.append(meta)}button.dataset.kind=item.kind;button.onclick=()=>detail(item);parent.append(button)}if(!selected.length){const empty=document.createElement('p');empty.className='quiet';empty.textContent='No reviewed catalysts in this category.';parent.append(empty)}let pager=$(rail?'railPages':'feedPages');if(!pager){pager=document.createElement('nav');pager.id=rail?'railPages':'feedPages';pager.className='catalyst-pages';pager.setAttribute('aria-label','Catalyst pages');parent.after(pager)}pager.replaceChildren();if(pages>1){for(let n=Math.max(1,page-2);n<=Math.min(pages,page+2);n++){const b=document.createElement('button');b.textContent=n;b.type='button';b.setAttribute('aria-label','Page '+n);if(n===page)b.setAttribute('aria-current','page');b.onclick=()=>{page=n;render()};pager.append(b)}}if(railLink)pager.append(railLink)}
