@@ -73,7 +73,7 @@ export async function collectWhaleHistory(previous,fastnearKey=null){
    const to=Math.min(pending?.to??now,finalTime);
    let cursor=pending?.provider==='nearblocks'?null:pending?.cursor;
    let rows=pending?.provider==='nearblocks'?[]:pending?.rows||[];
-   let complete=!!pending?.downloadComplete,nativeOnly=pending?.provider==='nearblocks',fastnearFailed=false;
+   let complete=!!pending?.downloadComplete,nativeOnly=pending?.provider==='nearblocks',fastnearFailed=false,fastnearError=null;
    // Always prefer FastNEAR, unless resuming an unfinished NearBlocks page.
    if(!complete&&!nativeOnly&&!limited&&requests<MAX_TRANSFER_REQUESTS){
     try{
@@ -88,7 +88,7 @@ export async function collectWhaleHistory(previous,fastnearKey=null){
       cursor=d.resume_token;
       if(!cursor){complete=true;break}
      }
-    }catch(e){fastnearFailed=true;if(e.rateLimited)limited=true;}
+    }catch(e){fastnearFailed=true;fastnearError=e.rateLimited?'rate_limit':e.message?.match(/Source HTTP (\d+)/)?.[0]||e.name||'request_error';if(e.rateLimited)limited=true;}
    }
    // When FastNEAR cannot finish, use bounded NearBlocks v3 native receipts.
    // NearBlocks is native-only here: DEX/wNEAR coverage is NOT claimed complete.
@@ -100,16 +100,16 @@ export async function collectWhaleHistory(previous,fastnearKey=null){
      if(result.complete){
       rows=result.rows;complete=true;nativeOnly=true;backupWallets++;
      }else{
-      pendingHistory[w.account]={from,to,provider:'nearblocks',rows:result.rows,next:result.next};
+      pendingHistory[w.account]={from,to,provider:'nearblocks',rows:result.rows,next:result.next,reason:'more_pages'};
       continue;
      }
     }catch(e){
-     pendingHistory[w.account]=e.checkpoint?.next?{from,to,provider:'nearblocks',...e.checkpoint}:nativeOnly?pending||{from,to,provider:'nearblocks',rows:[],next:null}:{from,to,provider:'fastnear',cursor:cursor||null,rows};
+     pendingHistory[w.account]=e.checkpoint?.next?{from,to,provider:'nearblocks',...e.checkpoint,reason:e.rateLimited?'backup_rate_limit':'backup_error'}:nativeOnly?{...pending,reason:e.rateLimited?'backup_rate_limit':'backup_error'}:{from,to,provider:'fastnear',cursor:cursor||null,rows,reason:fastnearError||'backup_error'};
      continue;
     }
    }
    if(!complete){
-    pendingHistory[w.account]={from,to,provider:nativeOnly?'nearblocks':'fastnear',cursor:cursor||null,rows};
+    pendingHistory[w.account]={from,to,provider:nativeOnly?'nearblocks':'fastnear',cursor:cursor||null,rows,reason:requests>=MAX_TRANSFER_REQUESTS?'budget_exhausted':'more_pages'};
     continue;
    }
    delete pendingHistory[w.account];
