@@ -58,7 +58,7 @@ export async function discoverCatalysts(previous={}){
  });
  await run('hackathon',async()=>{
   const page=await request('https://nearhackathon.com/','html');
-  const total=extractHackathonCount(page);if(total===null)throw Error('Project count absent or ambiguous in official directory');
+  const total=extractHackathonCount(page);if(total===null)throw Error('Official directory did not expose a verifiable count to the Worker (possible bot page or changed markup)');
   return {items:[],meta:{total,definition:'Public project submissions; not verified launches or unique developers',url:'https://nearhackathon.com/#projects'}};
  });
  const existing=new Map((previous.pending||[]).filter(good).map(x=>[x.id,x]));
