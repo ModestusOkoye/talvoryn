@@ -50,7 +50,7 @@ export async function openWhaleDiscoveryStore(db){
  // The state pointer and candidates commit atomically; safe to re-run after interruption.
  const payload=encode(candidates);
  await db.batch([
-  db.prepare("INSERT INTO whale_discovery_candidates(account,payload) SELECT key,value FROM json_each(?) WHERE true ON CONFLICT(account) DO NOTHING").bind(payload),
+  db.prepare("INSERT INTO whale_discovery_candidates(account,payload) SELECT key,json_object('account',key,'classification','unverified','wallets',json(COALESCE(json_extract(value,'$.accounts'),'[]')),'receipts',json('[]'),'legacySampleReceipts',json(COALESCE(json_extract(value,'$.sampleReceipts'),'[]')),'transferCount',0,'firstSeen',json_extract(value,'$.firstObservedAt'),'lastSeen',json_extract(value,'$.lastObservedAt'),'assets',json(COALESCE(json_extract(value,'$.assets'),'[]'))) FROM json_each(?) WHERE true ON CONFLICT(account) DO NOTHING").bind(payload),
   db.prepare('INSERT INTO whale_discovery_state(id,payload) VALUES(1,?) ON CONFLICT(id) DO NOTHING').bind(encode(checkpoint))
  ]);
  return checkpoint;
