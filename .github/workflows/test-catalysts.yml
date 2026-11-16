@@ -8,6 +8,7 @@ on:
       - 'tests/whale-rate-limit.test.mjs'
       - 'tests/whale-nearblocks-fallback.test.mjs'
       - 'tests/whale-all-wallets.test.mjs'
+      - 'tests/whale-recovery-primary.test.mjs'
       - 'worker/nearblocks-fallback.mjs'
       - 'worker/whales.mjs'
       - '.github/workflows/test-catalysts.yml'
@@ -31,4 +32,4 @@ jobs:
           node --check worker/catalyst-x.mjs
           node --check dist/economic-catalysts.js
       - name: Test discovery, review and source gating
-        run: node --test tests/catalyst-discovery.test.mjs tests/catalyst-review.test.mjs tests/catalyst-impact.test.mjs tests/catalyst-x.test.mjs tests/whale-rate-limit.test.mjs tests/whale-nearblocks-fallback.test.mjs tests/whale-all-wallets.test.mjs
+        run: node --test tests/catalyst-discovery.test.mjs tests/catalyst-review.test.mjs tests/catalyst-impact.test.mjs tests/catalyst-x.test.mjs tests/whale-rate-limit.test.mjs tests/whale-nearblocks-fallback.test.mjs tests/whale-all-wallets.test.mjs tests/whale-recovery-primary.test.mjs
