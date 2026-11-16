@@ -7,9 +7,10 @@ Investigate the actual on-chain counterparties of the fixed 48 monitored NEAR wa
 ## Implemented (16 November 2026)
 
 - The incremental collector records unknown counterparties it sees in new FastNEAR pages, without adding external calls or changing public flow totals.
-- A separate **owner-only 30-day discovery backfill** scans all 48 wallets over a **fixed window**. It persists page cursor, wallet index, page count, transaction count, and bounded per-counterparty evidence in D1 under `whale-discovery-backfill`. It never writes the public `whales` dataset or the allowlist.
+- A separate **owner-only 30-day discovery backfill** scans all 48 wallets over a **fixed window**. It persists page cursor, wallet index, page count and transaction count in D1; individual candidates now live in the `whale_discovery_candidates` table, separate from the compact checkpoint in `whale_discovery_state`. It never writes the public `whales` dataset or the allowlist.
 - The backfill is limited to **20 FastNEAR transfer calls per manual invocation**, with no automatic retries. The existing two-batch live whale collector and its Cloudflare request budget are unchanged.
-- Both successful pages and failed scans retain separate checkpoints. A failed page can be retried without skipping a wallet. Duplicated sample receipt identifiers are suppressed. A candidate cap is reported instead of silently claiming exhaustive attribution.
+- A successful page commits its candidate changes and cursor together in one D1 transaction; a failed page can be retried without skipping a wallet. Existing candidate records are merged by account, and sample receipt IDs are deduplicated.
+- The original 600-candidate in-memory limit is no longer used by the production endpoint. The first 437 saved candidates migrate from the original D1 dataset to independent D1 rows without losing the 12-wallet checkpoint; historical samples are retained but are not presented as verified trade evidence.
 - Automated tests verify the fixed window, 48-wallet iteration, 20-call ceiling, paginated continuation, failure recovery, and separation from published metrics.
 
 ## Operator procedure (not a public endpoint)
@@ -39,7 +40,7 @@ A backfill's `from` and `to` remain frozen after its first invocation. Each cand
 
 ## Historical reconstruction and audit gates
 
-1. Complete the backfill with all 48 wallets and **no truncated candidate list** or unresolved page errors.
+1. Complete the backfill with all 48 wallets and **no failed page commits** or unresolved page errors.
 2. Independently verify candidate CEX and DEX addresses. Preserve unresolved classifications as unknown.
 3. Update the allowlist with traceable evidence and regression tests only; no automatic registry promotion.
 4. Reconstruct the original 30-day interval from transaction receipts after the registry review, and reconcile each ledger event once by receipt ID and transfer index. No duplicated events or unsupported backfilled DEX claims.
@@ -50,6 +51,6 @@ A backfill's `from` and `to` remain frozen after its first invocation. Each cand
 
 - This procedure consumes one FastNEAR query per page, bounded to 20 per pass. It is **not** free in FastNEAR credit terms; estimate from actual pages and stop on source errors.
 - The complete 30-day history may require additional pages beyond the 48 first pages; the endpoint can resume without restarting.
-- The first discovery pass has a bounded number of candidate records to protect D1 storage. If this capacity is reached, **do not claim comprehensive discovery**; revise capacity/storage and reprocess based on evidence.
+- Candidate records use individual D1 rows instead of one large JSON checkpoint, avoiding the previous 600-candidate cap. D1 storage and request limits still apply; monitor database size and stop on any failed page commit rather than advance the cursor.
 - Results from historical backfill are an evidence queue, not automatic proof of exchange ownership.
 - Confirm unattended cron success separately; manual owner runs are not evidence of cron execution.
