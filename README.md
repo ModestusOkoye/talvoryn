@@ -8,204 +8,160 @@
 
 ## Understanding NEAR beyond its price chart
 
-NEAR is an evolving blockchain ecosystem. Following its trajectory means examining **market behaviour (TA)**, **developments that might change its fundamentals (FA)** and **what the blockchain actually records (on-chain analysis)**.
+A price chart tells only part of the story. Talvoryn combines **technical analysis (TA)**, **fundamental analysis (FA)** and **on-chain evidence** to research NEAR in one place.
 
-**Talvoryn connects these three perspectives in one research environment.**
-
-NEAR Intents is a central part of that work—not the entire research thesis. Its swaps, fees, revenue, integrations and buyback-wallet activity provide measurable signs of traction. We compare those signals with NEAR's supply, market performance, wallet activity and wider ecosystem catalysts to see whether the evidence supports or challenges our expectations.
-
-The aim is to follow a changing picture of NEAR, form research questions and **revise our conclusions when new evidence demands it**.
+We connect market performance and ecosystem developments with measurable activity—NEAR Intents volume, fees, revenue, buyback-wallet inflows, token supply, integrator adoption and large-wallet exchange flows. The goal is to test an investment thesis against evidence, not assume that rising activity guarantees a rising token price.
 
 ## Explore Talvoryn
 
-| Feature | What you can explore |
+| Explore | What you can test |
 | --- | --- |
-| [**Overview**](https://talvoryn.pages.dev/performance.html) | Market performance, Intents volume, fees, revenue, buyback-wallet inflows and token economics |
-| [**Catalysts**](https://talvoryn.pages.dev/catalysts.html) | Governance decisions, protocol upgrades, product launches, partnerships, adoption and other developments relevant to NEAR's fundamentals |
-| [**Forecast**](https://talvoryn.pages.dev/research.html) | Issuance-offset, revenue and exploratory price scenarios with adjustable assumptions and comparison |
-| [**Integrators**](https://talvoryn.pages.dev/integrators.html) | Activity and attributed market share across eligible third-party applications using NEAR Intents |
-| **Wallet intelligence** | Verified exchange-related flows across a monitored sample of large NEAR wallets, surfaced in Overview |
-| [**Methodology**](https://talvoryn.pages.dev/methodology.html) | Data sources, formulas, coverage, verification and reproducibility |
-| [**Research Thesis**](research-thesis.md) | AI-readable research brief covering the hypothesis, evidence, counterarguments and what to verify next |
+| [**Overview**](https://talvoryn.pages.dev/performance.html) | NEAR market performance, Intents volume, fees, revenue, buyback-wallet inflows and supply |
+| [**Forecast**](https://talvoryn.pages.dev/research.html) | Adjust issuance, fee, revenue-capture, buyback and price assumptions; compare scenarios |
+| [**Catalysts**](https://talvoryn.pages.dev/catalysts.html) | Research governance, upgrades, integrations, adoption and other NEAR developments |
+| [**Integrators**](https://talvoryn.pages.dev/integrators.html) | Compare third-party applications' attributed Intents activity and share |
+| [**Whale Intelligence**](https://talvoryn.pages.dev/performance.html) | Inspect exchange-related flows across 48 monitored NEAR wallets |
+| [**Methodology**](https://talvoryn.pages.dev/methodology.html) | Trace metrics to sources, definitions, formulas and observation dates |
 
-## Three pillars of Talvoryn
+### Three connected research lenses
 
-### 1. Technical analysis (TA) — What is the market doing?
+- **TA — Market behaviour:** compare NEAR's price and relative performance with BTC and ETH.
+- **FA — Ecosystem and economics:** assess catalysts, adoption, Intents usage, fees and revenue.
+- **On-chain — Observable evidence:** inspect token supply, burns, buyback-wallet transfers and qualifying whale flows.
 
-We compare NEAR's market performance with broader conditions, including BTC and ETH. Price trends, momentum and relative performance provide context for the market's reaction to developments.
+Together, these help researchers ask whether market movements are supported by meaningful economic activity and verifiable blockchain events.
 
-The research combines market history and relative-performance comparisons, with scope to extend technical indicators over time.
+## Key research features
 
-### 2. Fundamental analysis (FA) — What could change NEAR's outlook?
+### Intents activity and token economics
 
-**Catalysts sit at the centre of our fundamental research.** We follow governance and tokenomics proposals, protocol upgrades, ecosystem launches, integrations, partnerships, adoption and competitive developments.
+The Overview chart switches between **Volume, Fees, Revenue and Buybacks**, with selectable time intervals and comparisons.
 
-A headline alone is not a conclusion. For each meaningful catalyst, the research asks:
+- **Effective fee rate** = fees ÷ volume.
+- **Revenue capture** = revenue ÷ fees.
+- **Net issuance** = gross issuance − burns.
+- **Issuance offset** = (burns + buyback-wallet inflows) ÷ gross issuance.
 
-- **What happened?** Is it a proposal, announcement, implementation or verified result?
-- **Why does it matter?** Which part of NEAR's adoption, utility or economics might it affect?
-- **What should we watch?** What observable evidence could confirm—or challenge—the expected impact?
+These are distinct measures: swap volume is not revenue, and a transfer into a buyback wallet is not a burn. The [Methodology](https://talvoryn.pages.dev/methodology.html) explains the source definitions.
 
-NEAR Intents contributes fundamental *traction evidence*, but the analysis of NEAR extends beyond Intents.
+### Forecast: test your assumptions
 
-### 3. On-chain analysis — What does the blockchain show?
+Use [Forecast](https://talvoryn.pages.dev/research.html) to explore how changing Intents activity, fee rate, revenue capture, buyback allocation, issuance or NEAR price affects modelled scenarios. Compare outcomes with the underlying assumptions rather than interpreting a forecast as a guaranteed price.
 
-Blockchain evidence helps test the fundamental story. Talvoryn examines finalised supply observations, reconstructed issuance and burns, inbound NEAR transfers to the buyback wallet and qualifying exchange-related whale flows.
+### Catalysts and integrators
 
-**Buyback wallet inflows and token supply belong here as measured on-chain evidence.** Their *economic interpretation* also informs fundamental analysis, but they are not the same as governance or product catalysts.
+[**Catalysts**](https://talvoryn.pages.dev/catalysts.html) links ecosystem developments to questions about adoption and economic impact. A proposal, announcement and implemented result are treated differently.
 
-An exchange deposit does not prove a sale; a wallet withdrawal does not prove a purchase. We separate observable transfers from unsupported explanations.
+[**Integrators**](https://talvoryn.pages.dev/integrators.html) uses NearStats attribution to compare eligible third-party applications across reported time windows. Integrator-attributed activity is distinct from total Intents volume.
 
-### How the pillars work together
+### Whale intelligence: follow the transactions
 
-```mermaid
-flowchart TD
-    TA["Technical analysis<br/>Price and relative market behaviour"]
-    FA["Fundamental analysis<br/>Catalysts, governance and adoption"]
-    OC["On-chain analysis<br/>Supply, wallet flows and activity"]
-    TA --> R["Research questions and thesis"]
-    FA --> R
-    OC --> R
-    R --> E["Define evidence that supports or challenges the thesis"]
-    E --> M["Monitor new observations"]
-    M --> V["Maintain, revise or reject the thesis"]
-    V --> M
-```
+Talvoryn monitors **48 identified NEAR wallets** and calculates qualifying exchange-related flows for rolling **24-hour, 7-day and 30-day** periods.
 
-These are **complementary perspectives**, not three interchangeable datasets. A catalyst may suggest a possible change; on-chain and economic observations can help assess whether it materialises; market data shows how the price has behaved.
+The current exchange registry contains **26 CEX address entries** for Binance and KuCoin and **2 DEX contracts** associated with Rhea / Ref. CEX transfers are described as deposits or withdrawals, **not automatically buys or sells**. DEX trades require matching successful swap evidence.
 
-## How Talvoryn works
+**[Inspect the public whale dataset](https://talvoryn.pages.dev/api/whales)**. It includes the wallet cohort, exchange registry, reporting periods and qualifying transaction evidence. The wallet sample is not a network-wide ranking of NEAR holders.
 
-Collection and research modelling are separate processes. Different sources can cover different periods, so each measurement keeps its own observation cutoff and recorded check time.
+## Reproduce and verify
 
-```mermaid
-flowchart TD
-    A["DefiLlama<br/>Intents activity and market prices"] --> D["Validate source values and coverage"]
-    B["NEAR RPC and FastNEAR<br/>Supply and transfers"] --> D
-    C["NearStats<br/>Integrator attribution"] --> D
-    D --> DB["Cloudflare Worker + D1<br/>Versioned datasets and job status"]
-    DB --> SITE["Talvoryn<br/>Overview, Integrators and source freshness"]
-    H["Saved historical research inputs"] --> MODEL["Python statistical model build"]
-    MODEL --> F["Saved model and model-build timestamp"]
-    F --> SITE
-    OFF["Official proposals and source updates"] --> DISC["Catalyst discovery / review"]
-    DISC -. "Reviewed findings only" .-> SITE
-```
+These checks are intended for hackathon judges, researchers and AI agents. The public endpoints return JSON and require no owner token.
 
-The statistical Forecast model is **not automatically retrained with each hourly data refresh**. Source monitoring can identify candidate catalysts; a candidate is not automatically an approved interpretation or a published story.
+### 1. Check whale addresses, exchange registry and flows
 
-### Whale intelligence — inspect the evidence
-
-Talvoryn monitors **48 identified NEAR wallets** and measures their verified exchange-related flows over rolling **24-hour, 7-day and 30-day** windows. Explore **Whale Accumulation** on the [Overview](https://talvoryn.pages.dev/performance.html); the [public whale dataset](https://talvoryn.pages.dev/api/whales) exposes the underlying wallet cohort, exchange registry, transaction receipts, classification and reporting windows.
-
-The published exchange registry currently lists **26 CEX address entries** (Binance and KuCoin) and **two DEX contracts** (Rhea / Ref AMM and DCL). CEX movements are classified as exchange deposits or withdrawals, not automatically as sales or purchases. DEX buys and sells require a successful transaction and matching swap/transfer evidence. Unverified counterparties do not become trades.
-
-**Try it yourself** — run this in any browser's developer console on Talvoryn, or in Node.js 22+:
+Open [the whale API](https://talvoryn.pages.dev/api/whales), or run the following in the browser console while on `talvoryn.pages.dev`:
 
 ```js
-const d = await fetch('https://talvoryn.pages.dev/api/whales').then(r => {
-  if (!r.ok) throw Error('Whale dataset unavailable: ' + r.status);
-  return r.json();
-});
-console.log('Wallets:', d.roster.length, 'CEX addresses:', d.registry.cex.length,
-  'DEX contracts:', d.registry.dex.length);
-console.table(['D', 'W', 'M'].map(period => {
-  const p = d.periods[period];
+const response = await fetch('/api/whales');
+if (!response.ok) throw new Error('Whale API: ' + response.status);
+const d = await response.json();
+
+console.log('Monitored wallets:', d.roster.length);
+console.log('CEX entries:', d.registry.cex.length);
+console.log('DEX contracts:', d.registry.dex.length);
+
+console.table(['D', 'W', 'M'].map(key => {
+  const p = d.periods[key];
   return {
-    period, fromUTC: p.from, throughUTC: p.through,
-    complete: p.complete, inflowsNEAR: p.incoming,
-    outflowsNEAR: p.outgoing, netNEAR: p.net,
-    verifiedEvents: p.events.length
+    period: key, fromUTC: p.from, throughUTC: p.through,
+    inflowsNEAR: p.incoming, outflowsNEAR: p.outgoing,
+    netNEAR: p.net, calculatedNet: p.incoming - p.outgoing,
+    complete: p.complete, qualifyingEvents: p.events.length
   };
 }));
+```
+
+Compare `netNEAR` with `calculatedNet` in each period. Period completeness and UTC cutoffs are provided alongside the values.
+
+### 2. Verify a recorded exchange movement on-chain
+
+After running the code above:
+
+```js
 console.table(d.periods.M.events.slice(0, 10).map(e => ({
-  timeUTC: e.timestamp, kind: e.kind, venue: e.venue,
-  amountNEAR: e.amount, transaction: e.transaction, receipt: e.receipt
+  timeUTC: e.timestamp, wallet: e.account, counterparty: e.counterparty,
+  venue: e.venue, type: e.kind, amountNEAR: e.amount,
+  transaction: e.transaction, receipt: e.receipt
 })));
 ```
 
-To reproduce an event, inspect its transaction and receipt on a NEAR explorer and compare the wallet, exchange counterparty, timestamp, token amount and event classification. The [Methodology](https://talvoryn.pages.dev/methodology.html) explains the rules and timestamp cutoffs. The 48 wallets are a **monitored sample**, not a claimed ranking of every NEAR holder.
+For any returned event, inspect its transaction and receipt on [NearBlocks](https://nearblocks.io/). Compare the wallet, counterparty, timestamp, amount and classification with the source transaction. If no event exists in a period, inspect another period; do not invent a transaction.
 
-**Check collection status:** [Public source health](https://talvoryn.pages.dev/api/health) reports the dataset's last successful check and data-through timestamp. The wallet collection runs in two batches every three hours.
+### 3. Test scenarios, catalysts and data freshness
 
-### Data schedules and transparency
+- [**Forecast**](https://talvoryn.pages.dev/research.html): change one assumption while holding others constant, then compare the modelled outcome.
+- [**Catalysts**](https://talvoryn.pages.dev/catalysts.html): open an item and inspect the linked original source.
+- [**Integrators**](https://talvoryn.pages.dev/integrators.html): compare applications and attribution periods.
+- [**Source health**](https://talvoryn.pages.dev/api/health) and [**Data Freshness**](https://talvoryn.pages.dev/methodology.html): examine the last source check and the date through which observations are available.
 
-| Dataset | Collection/check schedule |
-| --- | --- |
-| Intents volume, fees and revenue | Hourly |
-| NEAR, BTC and ETH daily prices | Hourly |
-| Current finalised supply observation | Hourly |
-| Buyback-wallet transfers | Hourly |
-| Integrators | Hourly |
-| Sampled whale activity | Every 3 hours |
-| Historical issuance and burns | Separate archival reconstruction |
-| Catalyst source discovery | Hourly |
+### 4. Run the code and automated tests
 
-A successful check is not the same as a new observation. The website's [Data Freshness table](https://talvoryn.pages.dev/methodology.html#freshnessTitle) distinguishes **Data through (UTC)** from **Last successful check (UTC)**.
-
-## Research Thesis
-
-[**Read research-thesis.md**](research-thesis.md)
-
-The research thesis is a standalone Markdown brief designed for both human review and AI-assisted analysis. It outlines what Talvoryn is investigating, which measurements support or challenge the hypothesis, what remains uncertain, and the evidence needed to update the view.
-
-**Download or open the file in Claude, ChatGPT, Codex or another AI assistant** to interrogate the thesis, look for counterarguments, compare new evidence, or prepare a dated research update. Include fresh datasets or allow source retrieval for a current assessment; the thesis file alone is not a live data feed.
-
-## Research you can verify
-
-A useful research figure should be traceable. Talvoryn documents **where it came from, the period it covers, its calculation and how to verify the underlying evidence**.
-
-- [Technical Methodology](docs/METHODOLOGY.md) — formulas, research flows, verification rules, worked examples and reproduction steps
-- [Data Sources](docs/DATA_SOURCES.md) — original providers, cutoff definitions and collection schedules
-- [Architecture](docs/ARCHITECTURE.md) — Cloudflare infrastructure, persisted datasets, deployment and recovery checks
-
-## Run locally
-
-Requirements: **Node.js 22+** for core tests, **Node.js 24+** for the disk-backed SQLite integration test, **Python 3.10+**, and **NumPy** for statistical model fitting.
+Requirements: **Node.js 22+**; Python 3.10+ for research scripts.
 
 ```bash
 git clone https://github.com/ModestusOkoye/talvoryn.git
 cd talvoryn
-
 npm run dev
 # Open http://localhost:8080
 ```
 
-Run core validation and refresh supported sources:
+Run the core suite and Worker syntax check:
 
 ```bash
 npm run test:core
-python3 -m pip install -r requirements-models.txt
-python3 scripts/refresh_performance.py --skip-supply
-python3 scripts/refresh_integrators.py
-python3 scripts/build_research_models.py
+npm run build
 ```
 
-The `--skip-supply` flag avoids rerunning expensive archival reconstruction and preserves verified supply evidence. Rebuilding the statistical model is a **separate explicit command**.
+For broader JavaScript tests, use `npm run test:legacy`. The optional `npm run test:scheduled:live` exercises real-source ingestion and local persistence; it contacts external providers.
 
-Optional real-provider local scheduled-handler test:
+## Research thesis
 
-```bash
-npm run test:scheduled:live
+**Can growing NEAR Intents activity and broader ecosystem developments translate into stronger, durable economic activity and demand for NEAR?**
+
+Our [working research thesis](research-thesis.md) examines what would support that question—and what would challenge it. Volume growth alone does not prove token demand. The thesis is written for human review and AI-assisted critique, with the original evidence and counterarguments available to inspect.
+
+## Architecture and sources
+
+```mermaid
+flowchart LR
+  A["DefiLlama: Intents and prices"] --> D["Validate and record"]
+  B["NEAR RPC / FastNEAR: on-chain data"] --> D
+  C["NearStats: integrator attribution"] --> D
+  D --> E["Cloudflare Worker + D1"]
+  E --> F["Talvoryn Dashboard"]
+  G["Reviewed ecosystem sources"] --> F
+  H["Saved research inputs"] --> I["Python research models"]
+  I --> F
 ```
 
-This test contacts public providers and exercises local disk-backed persistence. **It does not verify an actual Cloudflare Cron execution.**
+The website runs on **Cloudflare Pages**, with data collection through **Cloudflare Workers** and persistent datasets in **D1**. Major source checks are scheduled hourly; whale monitoring uses a three-hour schedule. Statistical Forecast model builds are separate from hourly data collection.
 
-## Deployment
+More detail: [Technical Methodology](docs/METHODOLOGY.md) · [Data Sources](docs/DATA_SOURCES.md) · [Architecture](docs/ARCHITECTURE.md).
 
-- **Cloudflare Pages:** public interface from the `dist/` directory
-- **Cloudflare Worker:** read-only data APIs and scheduled source checks
-- **Cloudflare D1:** versioned research datasets and collection health
-- **Python scripts:** historical reconstruction and statistical model building
-- **GitHub:** implementation, tests and reproducible methodology
+## Research scope and disclaimer
 
-Explore the live datasets and collection timestamps using [Data Freshness](https://talvoryn.pages.dev/methodology.html) or the [public source-health API](https://talvoryn.pages.dev/api/health). Published analyses distinguish their observation dates from the time the source was checked.
+Every dataset has its own source, definition and observation cutoff. The 48 monitored whales are a **sample**; attributed integrator volume is not the entire Intents market; wallet inflows do not by themselves prove market purchases or token burns. Missing observations should not be represented as measured zeros.
 
-For the precise setup and verification procedure, see [Architecture](docs/ARCHITECTURE.md). Keep credentials in secret storage, not the repository.
-
-## Verification and research definitions
-
-Talvoryn makes research figures inspectable through its [Methodology](https://talvoryn.pages.dev/methodology.html), [Technical Methodology](docs/METHODOLOGY.md) and original source records. Each dataset identifies its date range and source. For reproducible exchange attribution, see the public whale API and its event receipts above. Missing observations are not silently treated as measured zeros.
+Talvoryn is for **research and education**, not investment, financial or legal advice. Scenarios and historical measurements do not guarantee future performance.
 
 ---
 
