@@ -65,7 +65,6 @@ export async function collectWhaleHistory(previous,fastnearKey=null,{batchIndex=
   const old=new Map((previous.wallets||[]).map(w=>[w.account,w])),pendingHistory=structuredClone(previous.pendingHistory||{});
   // Check every wallet on each run. Older checkpoints first, then pending pages.
   // Narrow each query to the wallet's last verified observation; do not rescan 30 days.
-  const allOrdered=[...roster].sort((a,b)=>(Date.parse(old.get(a.account)?.observedThrough||0)||0)-(Date.parse(old.get(b.account)?.observedThrough||0)||0));
   if(!Number.isInteger(batchIndex)||!Number.isInteger(batchCount)||batchCount<1||batchIndex<0||batchIndex>=batchCount)throw Error('Invalid whale batch');
   // Stable cohort assignment: each three-hour cycle consists of two Worker invocations.
   const ordered=[...roster].filter((_,index)=>index%batchCount===batchIndex).sort((a,b)=>(Date.parse(old.get(a.account)?.observedThrough||0)||0)-(Date.parse(old.get(b.account)?.observedThrough||0)||0));
@@ -117,7 +116,7 @@ export async function collectWhaleHistory(previous,fastnearKey=null,{batchIndex=
     }
    }
    if(!complete){
-    pendingHistory[w.account]={from,to,provider:nativeOnly?'nearblocks':'fastnear',cursor:cursor||null,rows,reason:requests>=MAX_TRANSFER_REQUESTS?'budget_exhausted':'more_pages'};
+    pendingHistory[w.account]={from,to,provider:nativeOnly?'nearblocks':'fastnear',cursor:cursor||null,rows,reason:fastnearError||(externalRequests>=externalLimit?'worker_subrequest_budget':requests>=MAX_TRANSFER_REQUESTS?'budget_exhausted':'more_pages')};
     continue;
    }
    delete pendingHistory[w.account];
