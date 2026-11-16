@@ -2,9 +2,9 @@ const json=(d,status=200)=>new Response(JSON.stringify(d),{status,headers:{'Cont
 export async function onRequest(context){
  const path=new URL(context.request.url).pathname;
  if(context.request.method!=='GET')return json({error:'Read-only public API'},405);
- if(!['/api/whales','/api/catalysts','/api/health','/api/catalysts/hackathon','/api/catalysts/source-health'].includes(path))return json({error:'Not found'},404);
+ if(!['/api/whales','/api/catalysts','/api/health','/api/catalysts/hackathon','/api/catalysts/source-health','/api/catalysts/projects'].includes(path))return json({error:'Not found'},404);
  if(context.env.DATA_WORKER)return context.env.DATA_WORKER.fetch(context.request);
- if(path==='/api/catalysts/hackathon'||path==='/api/catalysts/source-health')return json({available:false,error:'Live data Worker unavailable'},503);
+ if(path==='/api/catalysts/hackathon'||path==='/api/catalysts/source-health'||path==='/api/catalysts/projects')return json({available:false,error:'Live data Worker unavailable'},503);
  if(path==='/api/health')return json({status:'snapshot_only',workerConnected:false,schedulerConfigured:false,message:'Cloudflare Worker and D1 activation are pending'},503);
  const url=new URL(path==='/api/whales'?'/data/whales.json':'/data/economic-catalysts.json',context.request.url);
  const response=await context.next(new Request(url,context.request));
