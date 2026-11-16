@@ -72,7 +72,7 @@ export async function collectWhaleHistory(previous,fastnearKey=null){
    const to=Math.min(pending?.to??now,finalTime);
    let cursor=pending?.provider==='nearblocks'?null:pending?.cursor;
    let rows=pending?.provider==='nearblocks'?[]:pending?.rows||[];
-   let complete=!!pending?.downloadComplete,nativeOnly=pending?.provider==='nearblocks';
+   let complete=!!pending?.downloadComplete,nativeOnly=pending?.provider==='nearblocks',fastnearFailed=false;
    // Always prefer FastNEAR, unless resuming an unfinished NearBlocks page.
    if(!complete&&!nativeOnly&&!limited&&requests<MAX_TRANSFER_REQUESTS){
     try{
@@ -85,11 +85,11 @@ export async function collectWhaleHistory(previous,fastnearKey=null){
       cursor=d.resume_token;
       if(!cursor){complete=true;break}
      }
-    }catch(e){if(e.rateLimited)limited=true;}
+    }catch(e){fastnearFailed=true;if(e.rateLimited)limited=true;}
    }
    // When FastNEAR cannot finish, use bounded NearBlocks v3 native receipts.
    // NearBlocks is native-only here: DEX/wNEAR coverage is NOT claimed complete.
-   if(!complete&&backupPages<12){
+   if(!complete&&(fastnearFailed||nativeOnly||limited)&&backupPages<12){
     try{
      const saved=nativeOnly?pending:{};
      const result=await fetchNearBlocksWindow(w.account,from,to,saved,Math.min(3,12-backupPages));
