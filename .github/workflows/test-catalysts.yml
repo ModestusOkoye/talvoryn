@@ -17,6 +17,8 @@ on:
       - 'worker/whales.mjs'
       - 'worker/counterparty-discovery.mjs'
       - 'worker/whale-discovery-backfill.mjs'
+      - 'worker/whale-discovery-store.mjs'
+      - 'tests/whale-discovery-store.test.mjs'
       - 'tests/whale-discovery-backfill.test.mjs'
       - 'tests/whale-counterparty-discovery.test.mjs'
       - '.github/workflows/test-catalysts.yml'
@@ -40,4 +42,4 @@ jobs:
           node --check worker/catalyst-x.mjs
           node --check dist/economic-catalysts.js
       - name: Test discovery, review and source gating
-        run: node --test tests/catalyst-discovery.test.mjs tests/catalyst-review.test.mjs tests/catalyst-impact.test.mjs tests/catalyst-x.test.mjs tests/whale-rate-limit.test.mjs tests/whale-nearblocks-fallback.test.mjs tests/whale-all-wallets.test.mjs tests/whale-recovery-primary.test.mjs tests/whale-invalid-page.test.mjs tests/whale-diagnose.test.mjs tests/whale-diagnostic-route.test.mjs tests/whale-external-budget.test.mjs tests/whale-counterparty-discovery.test.mjs tests/whale-discovery-backfill.test.mjs
+        run: node --test tests/catalyst-discovery.test.mjs tests/catalyst-review.test.mjs tests/catalyst-impact.test.mjs tests/catalyst-x.test.mjs tests/whale-rate-limit.test.mjs tests/whale-nearblocks-fallback.test.mjs tests/whale-all-wallets.test.mjs tests/whale-recovery-primary.test.mjs tests/whale-invalid-page.test.mjs tests/whale-diagnose.test.mjs tests/whale-diagnostic-route.test.mjs tests/whale-external-budget.test.mjs tests/whale-counterparty-discovery.test.mjs tests/whale-discovery-backfill.test.mjs tests/whale-discovery-store.test.mjs
