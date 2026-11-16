@@ -84,3 +84,46 @@ export function whaleDiscoverySummary(state){
 export function rankedWhaleCandidates(state,limit=50){
  return Object.values(state?.candidates||{}).sort((a,b)=>b.wallets.length-a.wallets.length||b.transferCount-a.transferCount).slice(0,Math.min(limit,100));
 }
+
+/**
+ * Row-backed discovery: commits every page and its exact continuation checkpoint
+ * atomically via the caller. No fixed in-memory candidate cap and no repeated scan
+ * after a failed page. Does not change live accumulation.
+ */
+export async function advanceWhaleDiscoveryStored(previous,{fetchPage,commitPage,knownAccounts,pageLimit=MAX_PAGES,now=Date.now()}){
+ if(!previous||previous.revision!==2||previous.storage!=='D1_rows')throw Error('Expected D1-backed backfill checkpoint');
+ if(!Number.isInteger(pageLimit)||pageLimit<1||pageLimit>MAX_PAGES)throw Error('Invalid page limit');
+ let state=structuredClone(previous),requests=0;
+ if(state.completed)return {...state,requestsThisRun:0};
+ const known=new Set(knownAccounts);
+ while(state.nextWallet<state.roster.length&&requests<pageLimit){
+  const wallet=state.roster[state.nextWallet];
+  const body={account_id:wallet,ignore_system:true,from_timestamp_ms:state.from,to_timestamp_ms:state.to,limit:100,desc:true,...(state.cursor?{resume_token:state.cursor}:{})};
+  requests++;
+  let response;
+  try{
+   response=await fetchPage(body);
+   if(!response||!Array.isArray(response.transfers))throw Error('Invalid FastNEAR transfer response');
+   const next=response.resume_token;
+   if(next!==null&&next!==undefined&&typeof next!=='string')throw Error('Invalid FastNEAR continuation token');
+   if(next&&next===state.cursor)throw Error('Repeated FastNEAR continuation token');
+   const proposed=structuredClone(state);
+   proposed.scannedPages++;
+   proposed.scannedTransfers+=response.transfers.length;
+   proposed.knownTransferCount+=response.transfers.filter(r=>known.has(r.other_account_id)).length;
+   if(next)proposed.cursor=next;
+   else {proposed.cursor=null;proposed.nextWallet++;proposed.completedWallets++;}
+   proposed.completed=proposed.nextWallet===proposed.roster.length;
+   proposed.updatedAt=iso(now);
+   proposed.lastError=null;
+   // Callback must write candidates + proposed checkpoint in ONE transaction.
+   await commitPage(proposed,response.transfers,wallet,knownAccounts);
+   state=proposed;
+  }catch(e){
+   state.lastError=e?.name==='TimeoutError'?'timeout':/Source HTTP \d+/.exec(e?.message||'')?.[0]||'page_or_storage_error';
+   state.updatedAt=iso(now);
+   break;
+  }
+ }
+ return {...state,requestsThisRun:requests};
+}
