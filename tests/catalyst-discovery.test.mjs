@@ -16,7 +16,7 @@ try {
   if(String(url).includes('api.github.com'))return Response.json([
    {number:22,title:'Protocol fee adjustment',updated_at:'2026-11-14T19:00:00Z',html_url:'https://github.com/near/NEPs/pull/22'},
    {number:23,title:'Improve format',updated_at:'2026-11-14T19:00:00Z',html_url:'https://github.com/near/NEPs/pull/23'}]);
-  if(String(url).includes('nearhackathon.com'))return new Response('<span>1–8 OF 2,438 PROJECTS</span>');
+  if(String(url).includes('nearhackathon.com'))return Response.json({projects:[{id:'p1',project_name:'Talvoryn'}],total:2438,page:1,pageSize:8,preview:false});
   if(String(url).includes('near.org/blog'))return new Response('<a href="/blog/near-intents-launch"><img alt="NEAR Intents launches institutional access"></a>');
   throw Error('Unexpected URL');
  };
