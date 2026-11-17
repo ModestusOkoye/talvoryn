@@ -94,3 +94,36 @@ jobs:
       - name: Explain inactive publishing
         if: ${{ success() && vars.SUPPLY_AUTO_PUBLISH != 'enabled' }}
         run: echo "Archival tests passed; publication is gated until SUPPLY_AUTO_PUBLISH repository variable is enabled after live baseline review."
+
+      - name: Diagnose Cloudflare access automatically after a failed publication
+        if: ${{ failure() && vars.SUPPLY_AUTO_PUBLISH == 'enabled' }}
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, urllib.request, urllib.error
+          base="https://talvoryn-data.paulsimonmodus.workers.dev"
+          output=[]
+          for path in ("/api/health","/data/supply-daily.json"):
+            for agent in ("Talvoryn-diagnostic/1.0","Mozilla/5.0"):
+              req=urllib.request.Request(base+path,headers={"Accept":"application/json","User-Agent":agent})
+              try:
+                with urllib.request.urlopen(req,timeout=25) as response:
+                  status=response.status; headers=response.headers; body=b""
+              except urllib.error.HTTPError as error:
+                status=error.code; headers=error.headers; body=error.read(200)
+              except Exception as error:
+                output.append({"path":path,"agent":agent,"error":str(error)[:160]})
+                continue
+              result={"path":path,"agent":agent,"status":status,"server":headers.get("Server"),"cfRay":headers.get("CF-Ray"),"cfMitigated":headers.get("cf-mitigated"),"contentType":headers.get("Content-Type"),"bodySnippet":body.decode("utf-8","replace")[:160] if "json" in headers.get("Content-Type","") else "(non-JSON omitted)"}
+              output.append(result)
+              print(json.dumps(result),flush=True)
+          with open("cloudflare-failure-diagnostic.json","w") as file:json.dump(output,file,indent=2)
+          PY
+      - name: Retain automatic Cloudflare failure diagnostics
+        if: ${{ failure() && vars.SUPPLY_AUTO_PUBLISH == 'enabled' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloudflare-failure-diagnostic-${{ github.run_id }}
+          path: cloudflare-failure-diagnostic.json
+          if-no-files-found: warn
+          retention-days: 14
