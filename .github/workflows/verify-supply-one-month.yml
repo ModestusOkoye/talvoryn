@@ -1,0 +1,81 @@
+name: Verify one historical NEAR supply month
+
+on:
+  workflow_dispatch:
+    inputs:
+      month:
+        description: 'UTC month (YYYY-MM); run April through October in order'
+        required: true
+        type: choice
+        options:
+          - '2026-04'
+          - '2026-05'
+          - '2026-06'
+          - '2026-07'
+          - '2026-08'
+          - '2026-09'
+          - '2026-10'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: near-supply-historical
+  cancel-in-progress: false
+
+jobs:
+  verify-month:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    env:
+      FASTNEAR_API_KEY: ${{ secrets.FASTNEAR_API_KEY }}
+      NEAR_RPC_URL: https://archival-rpc.mainnet.fastnear.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Require archival RPC credential
+        run: |
+          if [ -z "$FASTNEAR_API_KEY" ]; then
+            echo "::error::FASTNEAR_API_KEY missing"
+            exit 1
+          fi
+      - name: Verify selected month
+        env:
+          MONTH: ${{ inputs.month }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          start="$MONTH-01"
+          end=$(python -c "import datetime as d,sys; x=d.date.fromisoformat(sys.argv[1]); print((x.replace(day=28)+d.timedelta(days=4)).replace(day=1).isoformat())" "$start")
+          python scripts/refresh_supply_daily.py --start "$start" --end "$end"
+          python scripts/validate_supply.py
+          python - "$start" "$end" <<'PY'
+          import datetime as dt, json, sys
+          from pathlib import Path
+          start, end = map(dt.date.fromisoformat, sys.argv[1:])
+          daily = json.loads(Path("dist/data/supply-daily.json").read_text())
+          report = json.loads(Path("dist/data/supply-validation.json").read_text())
+          expected = [(start + dt.timedelta(days=i)).isoformat() for i in range((end-start).days)]
+          rows = daily.get("daily", [])
+          assert [r["date"] for r in rows] == expected, "Incomplete or extra daily rows"
+          assert report.get("allBlockchainChecksPassed") is True, "Blockchain checks failed"
+          assert report.get("dailySupplyConservation") == "passed", "Daily conservation failed"
+          assert report.get("dailyRecordsChecked") == len(expected), "Daily validation count mismatch"
+          assert all(r.get("mintYocto") is not None and r.get("burnYocto") is not None for r in rows), "Missing verified values"
+          print(f"Verified {len(rows)} daily rows for {start:%Y-%m}; checkpoint ready", flush=True)
+          PY
+          mkdir -p backfill-results
+          cp dist/data/supply-daily.json "backfill-results/$MONTH-daily.json"
+          cp dist/data/supply-history.json "backfill-results/$MONTH-history.json"
+          cp dist/data/supply-validation.json "backfill-results/$MONTH-validation.json"
+          echo "Verified month $MONTH; saved checkpoint artifact"
+      - name: Upload month checkpoint
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: near-supply-${{ inputs.month }}
+          path: backfill-results/
+          if-no-files-found: warn
+          retention-days: 30
