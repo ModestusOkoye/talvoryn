@@ -104,7 +104,7 @@ This describes the main data path. The statistical Forecast model is rebuilt sep
 | Buyback-wallet inflows | [FastNEAR transfers](https://transfers.main.fastnear.com/v0/transfers) | Hourly | End of completed transfer interval |
 | Integrators | [NearStats](https://nearstats.org/api/integrators.json) | Hourly | Provider `dataEndsAt`, distinct from `generatedAt` |
 | Sampled whale flows | FastNEAR and finalised RPC records | Every three hours | Common verified wallet-coverage cutoff |
-| Gross issuance and burns | Archived NEAR block and epoch evidence | Separate archival research | Last reconstructed and verified boundary |
+| Gross issuance and burns | Historical NEAR block and epoch evidence via archival RPC | Independently verified monthly backfill; separate from hourly total-supply readings | Last reconstructed and verified UTC boundary |
 | Catalysts | Official announcements and source monitoring | Editorial review; source checks separately | Date a specific item was actually checked |
 
 On the public website, the live **Data Freshness** table reads recorded job outcomes from the Cloudflare Worker/D1 backend. Its two time columns mean:
@@ -174,7 +174,7 @@ Supply accounting uses finalised block evidence and **complete epoch transitions
 \text{Period burns}=\text{Gross issuance}-\left(\text{Ending total supply}-\text{Starting total supply}\right)
 \]
 
-The monthly series requires verified UTC boundaries and consistent epoch coverage. The saved historical monthly reconstruction covers **October 2026 and November 1–10, 2026**. Its exclusive cutoff is November 11, 2026. Additional daily historical coverage is incomplete; missing burns are not filled with estimates.
+The monthly series requires verified UTC boundaries and consistent epoch coverage. **April–October 2026 (seven complete months)** underwent independent full-month onchain re-verification. Each month's reconstructed gross issuance and inferred burns matched the previously preserved monthly figures, and the month-level reconciliation and coverage checks passed. This verification was performed separately from the public dashboard and did not change its figures. November's partial coverage and any gaps in the published daily series must be assessed separately; missing daily observations are not filled with estimates.
 
 A current finalised supply reading can tell us what total supply was at a particular block. It **cannot** by itself reconstruct issuance or burns for an unobserved historical interval.
 
@@ -187,7 +187,7 @@ A current finalised supply reading can tell us what total supply was at a partic
 - [Daily coverage metadata](../dist/data/supply-daily.json)
 - [NEAR source accounting implementation](https://github.com/near/nearcore/blob/9f88300a66a52872b9432dde3287d11e42831e91/core/primitives/src/block.rs)
 
-The original large blockchain evidence archive is preserved separately. Public archival endpoints have returned rate limits; extending coverage requires retrieving and validating the missing records rather than rebuilding previously verified work unnecessarily.
+Historical block and epoch evidence is retrieved through an archival NEAR RPC endpoint; "archival" describes access to older onchain records, not an estimated or unverified data source. The original large evidence archive is preserved separately. Public archival endpoints have returned rate limits; extending coverage requires retrieving and validating missing records.
 
 ### 3.3 Wallet intelligence
 
@@ -330,7 +330,7 @@ Talvoryn retains immutable stored revisions in D1. A conveniently downloadable, 
 
 Catalyst stories should point to the **specific announcement or proposal**, rather than merely the provider's home page. Source discovery checks can produce **private candidates**; they do not automatically establish verified editorial conclusions. The newer monitoring code requires deployed-worker execution verification.
 
-**Known limits:** incomplete historical daily issuance/burns; bounded wallet coverage; missing successful whale-job status; model rebuild dates absent from previously generated files; independent cross-source dashboard and public reproducible snapshots planned.
+**Known limits:** April–October monthly issuance/burns are independently re-verified, but published daily historical coverage and November's partial period remain separate coverage questions; bounded wallet coverage; missing successful whale-job status; model rebuild dates absent from previously generated files; independent cross-source dashboard and public reproducible snapshots planned.
 
 Talvoryn is independent. Attribution identifies information sources and does not imply their endorsement.
 
