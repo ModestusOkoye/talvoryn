@@ -60,6 +60,11 @@ jobs:
           assert (end-start).days<=3, 'First-stage verification is limited to 3 days'
           print('Verified collection window:',start,'to',end,'(exclusive)')
           PY
+      - name: Check publication and recovery safeguards offline before production access
+        run: |
+          python -m py_compile scripts/publish_verified_supply.py scripts/test_publish_verified_supply.py
+          python scripts/test_publish_verified_supply.py
+
       - name: Test collector error handling
         run: python scripts/test_supply_preflight.py
       - name: Reconstruct and validate recent supply
