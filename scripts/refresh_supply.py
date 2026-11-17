@@ -44,7 +44,7 @@ def rpc(method,params):
 def block(h):return rpc('block',{'block_id':h})
 def missing_height(error):
  message=str(error).lower()
- return any(x in message for x in ('unknown_block','db_not_found','unknown block','block not found','block does not exist','not found','unprocessable entity'))
+ return any(x in message for x in ('unknown_block','db_not_found','unknown block','block not found','block does not exist','not found','block height not found'))
 def produced_at_or_before(height,limit=80):
  # Only used for numerical heights: a skipped height is not an epoch boundary.
  for distance in range(limit):
