@@ -1,8 +1,10 @@
 name: Verify recent NEAR daily supply (staging)
 
-# Safe first stage: verify new UTC days using the existing authenticated archival
-# collector. This workflow intentionally does not import into production D1.
+# Daily automatic UTC verification with downloadable evidence.
+# This workflow intentionally does not import into production D1.
 on:
+  schedule:
+    - cron: '23 3 * * *'
   workflow_dispatch:
     inputs:
       start:
@@ -35,6 +37,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Select last completed UTC day for scheduled runs
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$START" ] || [ -z "$END" ]; then
+            echo "START=$(date -u -d 'yesterday' +%F)" >> "$GITHUB_ENV"
+            echo "END=$(date -u +%F)" >> "$GITHUB_ENV"
+          fi
       - name: Check secret and UTC window before any archival requests
         shell: bash
         run: |
@@ -67,7 +77,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: near-supply-recent-${{ inputs.start }}-to-${{ inputs.end }}
+          name: near-supply-recent-${{ github.run_id }}-${{ github.run_attempt }}
           path: recent-supply-results/
           if-no-files-found: warn
           retention-days: 7
