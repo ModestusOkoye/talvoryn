@@ -6,6 +6,7 @@ import os
 import sys
 import urllib.request
 import urllib.error
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -17,20 +18,43 @@ def require(condition, message):
     if not condition:
         sys.exit("SAFE PUBLISH REFUSED: " + message)
 
+RETRYABLE_READ_STATUSES = {429, 500, 502, 503, 504}
+MAX_READ_ATTEMPTS = 3
+
 def request(path, data=None, authorized=False):
+    """Retry only GET requests; never blindly replay a possibly committed POST."""
     headers = {"Accept": "application/json", "User-Agent": "Talvoryn-diagnostic/1.0"}
     if data is not None:
         headers["Content-Type"] = "application/json"
     if authorized:
         require(bool(TOKEN), "OWNER_API_TOKEN missing")
         headers["Authorization"] = "Bearer " + TOKEN
-    req = urllib.request.Request(URL + path, data=json.dumps(data).encode() if data is not None else None, headers=headers, method="POST" if data is not None else "GET")
-    try:
-        with urllib.request.urlopen(req, timeout=120) as response:
-            return json.load(response)
-    except urllib.error.HTTPError as error:
-        details = {"path": path, "status": error.code, "server": error.headers.get("Server"), "cfRay": error.headers.get("CF-Ray"), "cfMitigated": error.headers.get("cf-mitigated"), "contentType": error.headers.get("Content-Type")}
-        sys.exit("SAFE PUBLISH HTTP ERROR: " + json.dumps(details))
+    method = "POST" if data is not None else "GET"
+    payload = json.dumps(data).encode() if data is not None else None
+    attempts = MAX_READ_ATTEMPTS if method == "GET" else 1
+    for attempt in range(attempts):
+        req = urllib.request.Request(URL + path, data=payload, headers=headers, method=method)
+        try:
+            with urllib.request.urlopen(req, timeout=30) as response:
+                return json.load(response)
+        except urllib.error.HTTPError as error:
+            details = {"path": path, "method": method, "status": error.code,
+                       "server": error.headers.get("Server"),
+                       "cfRay": error.headers.get("CF-Ray"),
+                       "cfMitigated": error.headers.get("cf-mitigated")}
+            if method == "GET" and error.code in RETRYABLE_READ_STATUSES and attempt + 1 < attempts:
+                print("Transient read error; retry", attempt + 2, "of", attempts, "status", error.code, flush=True)
+                time.sleep(min(2 ** attempt, 4))
+                continue
+            sys.exit("SAFE PUBLISH HTTP ERROR: " + json.dumps(details))
+        except (TimeoutError, urllib.error.URLError) as error:
+            if method == "GET" and attempt + 1 < attempts:
+                print("Transient read transport failure; retry", attempt + 2, "of", attempts, flush=True)
+                time.sleep(min(2 ** attempt, 4))
+                continue
+            sys.exit("SAFE PUBLISH TRANSPORT ERROR: " + json.dumps(
+                {"path": path, "method": method, "errorType": type(error).__name__,
+                 "writeOutcome": "unknown; verify readback before any manual retry" if method == "POST" else "no write attempted"}))
 
 def indexed(rows, label):
     require(isinstance(rows, list), label + " daily rows missing")
