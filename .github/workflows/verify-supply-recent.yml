@@ -1,0 +1,73 @@
+name: Verify recent NEAR daily supply (staging)
+
+# Safe first stage: verify new UTC days using the existing authenticated archival
+# collector. This workflow intentionally does not import into production D1.
+on:
+  workflow_dispatch:
+    inputs:
+      start:
+        description: 'Inclusive UTC start date (YYYY-MM-DD); use a recent 1-3 day window'
+        required: true
+        type: string
+      end:
+        description: 'Exclusive UTC end date (YYYY-MM-DD), no later than today'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supply-recent-verification
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      FASTNEAR_API_KEY: ${{ secrets.FASTNEAR_API_KEY }}
+      NEAR_RPC_URL: https://archival-rpc.mainnet.fastnear.com
+      START: ${{ inputs.start }}
+      END: ${{ inputs.end }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check secret and UTC window before any archival requests
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$FASTNEAR_API_KEY" || { echo "::error::Missing FASTNEAR_API_KEY secret"; exit 1; }
+          python - <<'PY'
+          import datetime as dt, os
+          start=dt.date.fromisoformat(os.environ['START'])
+          end=dt.date.fromisoformat(os.environ['END'])
+          today=dt.datetime.now(dt.timezone.utc).date()
+          assert start>=dt.date(2026,11,1), 'Preserve verified April-October months'
+          assert start<end<=today, 'Only fully elapsed UTC days may be reconstructed'
+          assert (end-start).days<=3, 'First-stage verification is limited to 3 days'
+          print('Verified collection window:',start,'to',end,'(exclusive)')
+          PY
+      - name: Test collector error handling
+        run: python scripts/test_supply_preflight.py
+      - name: Reconstruct and validate recent supply
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/refresh_supply_daily.py --start "$START" --end "$END"
+          python scripts/validate_supply.py
+          mkdir -p recent-supply-results
+          cp dist/data/supply-daily.json recent-supply-results/supply-daily.json
+          cp dist/data/supply-history.json recent-supply-results/supply-history.json
+          cp dist/data/supply-validation.json recent-supply-results/supply-validation.json
+          echo "Validated staging artifacts only; production D1 was not changed."
+      - name: Retain verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: near-supply-recent-${{ inputs.start }}-to-${{ inputs.end }}
+          path: recent-supply-results/
+          if-no-files-found: warn
+          retention-days: 7
