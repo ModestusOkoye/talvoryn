@@ -1,4 +1,4 @@
-import {read,write,status,health} from './storage.mjs';
+import {read,write,writeIfCurrent,currentRevision,status,health} from './storage.mjs';
 import {collectWhaleHistory,diagnoseWhaleTransfer} from './whales.mjs';
 import {beginWhaleDiscovery,advanceWhaleDiscoveryStored,whaleDiscoverySummary} from './whale-discovery-backfill.mjs';
 import {openWhaleDiscoveryStore,saveWhaleDiscoveryInitial,commitWhaleDiscoveryPage,whaleDiscoveryCandidateSummary,listWhaleDiscoveryCandidates} from './whale-discovery-store.mjs';
@@ -151,4 +151,14 @@ if(u.pathname==='/api/admin/catalyst-review'){
  return reply({id:decision.id,decision:decision.decision,stage:decision.record?.stage||null,reviewedAt:decision.reviewedAt});
 }
 
-if(u.pathname==='/api/admin/refresh'){const job=u.searchParams.get('job');if(job&&!['whales','whales-2'].includes(job))return reply({error:'Unsupported manual job'},400);return reply(await runScheduled(env,job==='whales'?{cron:'17 */3 * * *',scheduledTime:Date.now()}:job==='whales-2'?{cron:'27 */3 * * *',scheduledTime:Date.now()}:{cron:'manual-test',scheduledTime:Date.now()}));}if(!u.pathname.startsWith('/api/admin/import/')||!new Set([...publicFiles,'buybacks','whales']).has(name))return reply({error:'Unknown import dataset'},404);const text=await req.text();if(new TextEncoder().encode(text).length>1900000)return reply({error:'Import too large'},413);const d=JSON.parse(text);if(name==='performance'&&(!Array.isArray(d.daily)||!Array.isArray(d.months)||!d.meta?.through))return reply({error:'Invalid performance shape'},400);if(name==='whales'&&!Array.isArray(d.roster))return reply({error:'Verified roster required'},400);return reply({hash:await write(env.DB,name,d,d.meta?.through||d.through||null)})}return reply({error:'Not found'},404)}catch(e){return reply({error:'Data request failed; inspect source health'},503)}}};
+if(u.pathname==='/api/admin/revision/supply-daily'){
+  if(req.method!=='GET')return reply({error:'Use GET'},405);
+  return reply({hash:await currentRevision(env.DB,'supply-daily')});
+}
+if(u.pathname==='/api/admin/refresh'){const job=u.searchParams.get('job');if(job&&!['whales','whales-2'].includes(job))return reply({error:'Unsupported manual job'},400);return reply(await runScheduled(env,job==='whales'?{cron:'17 */3 * * *',scheduledTime:Date.now()}:job==='whales-2'?{cron:'27 */3 * * *',scheduledTime:Date.now()}:{cron:'manual-test',scheduledTime:Date.now()}));}if(!u.pathname.startsWith('/api/admin/import/')||!new Set([...publicFiles,'buybacks','whales']).has(name))return reply({error:'Unknown import dataset'},404);const text=await req.text();if(new TextEncoder().encode(text).length>1900000)return reply({error:'Import too large'},413);const d=JSON.parse(text);if(name==='performance'&&(!Array.isArray(d.daily)||!Array.isArray(d.months)||!d.meta?.through))return reply({error:'Invalid performance shape'},400);if(name==='whales'&&!Array.isArray(d.roster))return reply({error:'Verified roster required'},400);if(name==='supply-daily'){
+  const expected=req.headers.get('If-Match')?.replace(/^"|"$/g,'');
+  if(!expected)return reply({error:'If-Match revision required'},428);
+  const result=await writeIfCurrent(env.DB,name,d,expected,d.meta?.through||d.through||null);
+  return result.conflict?reply({error:'Dataset changed during publication'},409):reply(result);
+}
+return reply({hash:await write(env.DB,name,d,d.meta?.through||d.through||null)})}return reply({error:'Not found'},404)}catch(e){return reply({error:'Data request failed; inspect source health'},503)}}};
