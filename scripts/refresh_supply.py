@@ -31,6 +31,10 @@ def rpc(method,params):
    tmp.replace(p);return j['result']
   except ValueError:raise
   except urllib.error.HTTPError as e:
+   if e.code in (400, 401, 403, 404, 422):
+    detail=e.read(1600).decode('utf-8',errors='replace')
+    safe_params={k:(v if k!='block_id' else str(v)[:100]) for k,v in params.items()}
+    raise RuntimeError(f'RPC HTTP {e.code} method={method} params={safe_params} response={detail[:900]}') from e
    if attempt==5:raise
    time.sleep((15 if e.code==429 else 2)*(attempt+1))
   except Exception:
@@ -85,7 +89,7 @@ def collect(start='2026-10-01',end=None,workers=8):
  print('Resolving UTC period boundaries',flush=True)
  with concurrent.futures.ThreadPoolExecutor(3)as pool:bounds=dict(zip(dates,pool.map(lambda d:boundary(d,head),dates)))
  print('UTC boundaries verified',flush=True)
- config=rpc('EXPERIMENTAL_protocol_config',{'block_id':head['header']['hash']});length=config['epoch_length'];begin=bounds[start]['before']['height'];last=latest['epoch_start_height'];probes=list(range(begin,last+1,length-200))+[last]
+ config=rpc('EXPERIMENTAL_protocol_config',{'block_id':head['header']['hash']});length=config['epoch_length'];begin=bounds[start]['before']['height'];last=bounds[end]['after']['height'];probes=list(range(begin,last+1,length-200))
  def event(probe):
   sample=block(probe);prev=block(sample['header']['next_epoch_id'])
   for d in range(1,51):
@@ -104,14 +108,17 @@ def collect(start='2026-10-01',end=None,workers=8):
  events=sorted(byhash.values(),key=lambda e:e['block']['height'])
  for a,b in zip(events,events[1:]):assert b['block']['epoch_id']==a['previousBlock']['hash'],'Epoch gap'
  assert int(events[0]['block']['timestamp_nanosec'])<=ns(start)
- assert events[-1]['block']['height']==last
- paid=sum(int(v)for v in latest['validator_reward_paid_prev_epoch'].values());assert paid==int(events[-2]['mintedYocto']),'Reward-map cross-check failed'
+ assert events[-1]['block']['timestamp_nanosec']>=ns(end),'Missing closing epoch coverage'
+ paid=None
+ if last>=latest['epoch_start_height']:
+  paid=sum(int(v)for v in latest['validator_reward_paid_prev_epoch'].values())
+  assert paid==int(events[-2]['mintedYocto']),'Reward-map cross-check failed'
  months=[]
  for a,b in zip(dates,dates[1:]):
   es=[e for e in events if ns(a)<=int(e['block']['timestamp_nanosec'])<ns(b)];mint=sum(int(e['mintedYocto'])for e in es);delta=int(bounds[b]['before']['total_supply'])-int(bounds[a]['before']['total_supply']);burn=mint-delta;assert burn>=0
   cv=lambda v:float(Decimal(v)/Decimal(10**24))
   months.append({'month':a[:7],'from':a,'toExclusive':b,'mint':cv(mint),'burn':cv(burn),'mintYocto':str(mint),'burnYocto':str(burn),'supplyChangeYocto':str(delta),'epochCount':len(es),'startBlock':bounds[a]['before'],'endBlock':bounds[b]['before']})
- data={'meta':{'retrievedAt':dt.datetime.now(UTC).isoformat(),'from':start,'toExclusive':end,'rpc':RPC,'method':'At each epoch start, issuance = block total_supply minus previous total_supply plus balance_burnt in newly included chunks. Period burns = collected issuance minus observed change in total supply. Burns are inferred, not a transaction-fee sum.','accountingSource':'https://github.com/near/nearcore/blob/9f88300a66a52872b9432dde3287d11e42831e91/core/primitives/src/block.rs','rewardCrossCheck':{'responseEpoch':latest['epoch_height'],'paidAtBlock':events[-2]['block']['hash'],'mintedYocto':str(paid),'matched':True},'finalisedHead':slim(head),'networkFeesCollected':False},'months':months,'boundaries':bounds,'issuanceEvents':events}
+ data={'meta':{'retrievedAt':dt.datetime.now(UTC).isoformat(),'from':start,'toExclusive':end,'rpc':RPC,'method':'At each epoch start, issuance = block total_supply minus previous total_supply plus balance_burnt in newly included chunks. Period burns = collected issuance minus observed change in total supply. Burns are inferred, not a transaction-fee sum.','accountingSource':'https://github.com/near/nearcore/blob/9f88300a66a52872b9432dde3287d11e42831e91/core/primitives/src/block.rs','rewardCrossCheck':{'responseEpoch':latest['epoch_height'] if paid is not None else None,'paidAtBlock':events[-2]['block']['hash'] if paid is not None else None,'mintedYocto':str(paid) if paid is not None else None,'matched':True if paid is not None else None,'status':'not_applicable_historical_window' if paid is None else 'passed'},'finalisedHead':slim(head),'networkFeesCollected':False},'months':months,'boundaries':bounds,'issuanceEvents':events}
  (OUT/'supply-history.json').write_text(json.dumps(data,indent=2));export_csv(data)
  print(json.dumps({'months':[{k:m[k]for k in ['month','mint','burn','epochCount']}for m in months],'allChecksPassed':True},indent=2),flush=True);return data
 
