@@ -8,6 +8,9 @@ on:
       - scripts/test_publish_verified_supply.py
       - scripts/triage_supply_failure.py
       - scripts/test_triage_supply_failure.py
+      - worker/storage.mjs
+      - worker/production.mjs
+      - tests/recovery/supply-revision.test.mjs
       - .github/workflows/test-supply-publisher.yml
 
 permissions:
@@ -28,3 +31,10 @@ jobs:
         run: python scripts/test_publish_verified_supply.py
       - name: Run incident triage classifier tests (offline)
         run: python scripts/test_triage_supply_failure.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify Worker syntax and concurrent-write safeguards
+        run: |
+          node --check worker/production.mjs
+          node --test tests/recovery/supply-revision.test.mjs
