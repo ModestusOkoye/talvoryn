@@ -64,6 +64,29 @@ jobs:
           echo "::group::Internal re-verification $start to $end ($SCOPE)"
           python scripts/refresh_supply_daily.py --start "$start" --end "$end"
           python scripts/validate_supply.py
+          python - "$start" "$end" "$SCOPE" <<'PY'
+          import datetime as dt, json, pathlib, sys
+          start, end, scope = sys.argv[1:]
+          base = pathlib.Path("dist/data")
+          daily = json.loads((base / "supply-daily.json").read_text())
+          report = json.loads((base / "supply-validation.json").read_text())
+          history = json.loads((base / "supply-history.json").read_text())
+          expected = (dt.date.fromisoformat(end) - dt.date.fromisoformat(start)).days
+          dates = [(dt.date.fromisoformat(start) + dt.timedelta(days=i)).isoformat() for i in range(expected)]
+          rows = daily.get("daily", [])
+          assert [r["date"] for r in rows] == dates, "Missing, duplicated or out-of-order daily records"
+          assert report.get("allBlockchainChecksPassed") is True, "Blockchain validation not passed"
+          assert report.get("dailySupplyConservation") == "passed", "Daily supply validation not passed"
+          assert report.get("dailyRecordsChecked") == expected, "Daily validation count mismatch"
+          assert daily.get("dailyMonthlyReconciliation") == "passed", "Monthly reconciliation missing"
+          months = history.get("months", [])
+          assert len(months) == 1 and months[0]["from"] == start and months[0]["toExclusive"] == end
+          assert all(int(r["mintYocto"]) >= 0 and int(r["burnYocto"]) >= 0 for r in rows)
+          if scope == "full-month":
+              next_month = (dt.date.fromisoformat(start).replace(day=28) + dt.timedelta(days=4)).replace(day=1).isoformat()
+              assert end == next_month, "Full-month range is incomplete"
+          print(f"Verified {expected} daily records; checkpoint eligible ({scope})")
+          PY
           cp dist/data/supply-daily.json "backfill-results/$start-daily.json"
           cp dist/data/supply-history.json "backfill-results/$start-history.json"
           cp dist/data/supply-validation.json "backfill-results/$start-validation.json"
