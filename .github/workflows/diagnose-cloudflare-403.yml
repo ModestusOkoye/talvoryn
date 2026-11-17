@@ -1,0 +1,50 @@
+name: Diagnose Cloudflare Worker 403 (read-only)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Probe Worker and record 403 origin without secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import urllib.request, urllib.error, json, os
+          base="https://talvoryn-data.paulsimonmodus.workers.dev"
+          paths=["/api/health","/data/supply-daily.json"]
+          agents=["Talvoryn-diagnostic/1.0","Mozilla/5.0"]
+          results=[]
+          for path in paths:
+            for agent in agents:
+              req=urllib.request.Request(base+path,headers={"Accept":"application/json","User-Agent":agent})
+              try:
+                with urllib.request.urlopen(req,timeout=25) as r:
+                  status=r.status;headers=r.headers;body=r.read(400)
+              except urllib.error.HTTPError as e:
+                status=e.code;headers=e.headers;body=e.read(400)
+              except Exception as e:
+                results.append({"path":path,"agent":agent,"error":type(e).__name__+": "+str(e)[:180]})
+                continue
+              ctype=headers.get("Content-Type","")
+              record={"path":path,"agent":agent,"status":status,"contentType":ctype,
+                "server":headers.get("Server"),"cfRay":headers.get("CF-Ray"),
+                "cfMitigated":headers.get("cf-mitigated"),"challenge":headers.get("www-authenticate"),
+                "bodyStart":body.decode("utf-8","replace")[:250] if status!=200 else "(200 response; body not logged)"}
+              results.append(record)
+              print(json.dumps(record),flush=True)
+          with open("cloudflare-403-diagnostic.json","w") as f:json.dump(results,f,indent=2)
+          PY
+      - name: Upload diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloudflare-403-diagnostic
+          path: cloudflare-403-diagnostic.json
+          retention-days: 7
