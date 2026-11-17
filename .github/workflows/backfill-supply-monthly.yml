@@ -12,6 +12,7 @@ jobs:
     timeout-minutes: 55
     env:
       FASTNEAR_API_KEY: ${{ secrets.FASTNEAR_API_KEY }}
+      OWNER_API_TOKEN: ${{ secrets.OWNER_API_TOKEN }}
       NEAR_RPC_URL: https://archival-rpc.mainnet.fastnear.com
     steps:
       - uses: actions/checkout@v4
@@ -25,7 +26,14 @@ jobs:
             echo "::error::FASTNEAR_API_KEY GitHub Actions secret is missing; refusing unauthenticated historical backfill."
             exit 1
           fi
-      - name: Collect and verify each completed month
+      - name: Require Cloudflare publishing credentials
+        shell: bash
+        run: |
+          if [ -z "$OWNER_API_TOKEN" ]; then
+            echo "::error::OWNER_API_TOKEN GitHub Actions secret is missing."
+            exit 1
+          fi
+      - name: Collect, verify and publish each completed month
         shell: bash
         run: |
           set -euo pipefail
@@ -39,6 +47,7 @@ jobs:
             cp dist/data/supply-daily.json "backfill-results/$start-daily.json"
             cp dist/data/supply-history.json "backfill-results/$start-history.json"
             cp dist/data/supply-validation.json "backfill-results/$start-validation.json"
+            python scripts/publish_verified_supply.py
             echo "::endgroup::"
           done
       - name: Upload verified monthly checkpoints
