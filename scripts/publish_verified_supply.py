@@ -5,6 +5,7 @@ import json
 import os
 import sys
 import urllib.request
+import urllib.error
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -17,15 +18,19 @@ def require(condition, message):
         sys.exit("SAFE PUBLISH REFUSED: " + message)
 
 def request(path, data=None, authorized=False):
-    headers = {"Accept": "application/json"}
+    headers = {"Accept": "application/json", "User-Agent": "Talvoryn-diagnostic/1.0"}
     if data is not None:
         headers["Content-Type"] = "application/json"
     if authorized:
         require(bool(TOKEN), "OWNER_API_TOKEN missing")
         headers["Authorization"] = "Bearer " + TOKEN
     req = urllib.request.Request(URL + path, data=json.dumps(data).encode() if data is not None else None, headers=headers, method="POST" if data is not None else "GET")
-    with urllib.request.urlopen(req, timeout=120) as response:
-        return json.load(response)
+    try:
+        with urllib.request.urlopen(req, timeout=120) as response:
+            return json.load(response)
+    except urllib.error.HTTPError as error:
+        details = {"path": path, "status": error.code, "server": error.headers.get("Server"), "cfRay": error.headers.get("CF-Ray"), "cfMitigated": error.headers.get("cf-mitigated"), "contentType": error.headers.get("Content-Type")}
+        sys.exit("SAFE PUBLISH HTTP ERROR: " + json.dumps(details))
 
 def indexed(rows, label):
     require(isinstance(rows, list), label + " daily rows missing")
