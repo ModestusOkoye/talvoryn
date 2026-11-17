@@ -99,5 +99,42 @@ class RetrySafety(unittest.TestCase):
                 p["request"]("/api/admin/import/supply-daily", {}, authorized=False)
             self.assertEqual(call.call_count, 1)
 
+class AmbiguousWriteSafety(unittest.TestCase):
+    def setUp(self):
+        self.day = today
+        self.entry = row(self.day)
+        self.protected = row("2026-10-31")
+        self.merged = {"daily": [self.protected, self.entry], "boundaries": {}, "meta": {}}
+        self.rows = {self.day: self.entry}
+        self.protected_rows = {"2026-10-31": json.dumps(self.protected, sort_keys=True)}
+
+    def test_timeout_after_committed_write_accepts_exact_readback(self):
+        with patch.dict(p["publish_or_confirm"].__globals__, {"request": unittest.mock.Mock(
+                side_effect=[SystemExit("timeout"), self.merged, self.merged])}) as env:
+            result = p["publish_or_confirm"](self.merged, self.rows, self.protected_rows)
+            self.assertEqual(result["hash"], "confirmed-by-full-readback")
+            self.assertEqual(env["request"].call_count, 3)
+
+    def test_timeout_without_commit_refuses_replay(self):
+        incomplete = {**self.merged, "daily": [self.protected]}
+        mock = unittest.mock.Mock(side_effect=[SystemExit("timeout"), incomplete])
+        with patch.dict(p["publish_or_confirm"].__globals__, {"request": mock}):
+            with self.assertRaises(SystemExit):
+                p["publish_or_confirm"](self.merged, self.rows, self.protected_rows)
+        self.assertEqual(mock.call_count, 2)
+
+    def test_success_response_but_wrong_readback_is_refused(self):
+        mock = unittest.mock.Mock(side_effect=[{"hash": "ok"}, {**self.merged, "daily": [self.protected]}])
+        with patch.dict(p["publish_or_confirm"].__globals__, {"request": mock}):
+            with self.assertRaises(SystemExit):
+                p["publish_or_confirm"](self.merged, self.rows, self.protected_rows)
+        self.assertEqual(mock.call_count, 2)
+
+    def test_success_response_and_exact_readback(self):
+        mock = unittest.mock.Mock(side_effect=[{"hash": "ok"}, self.merged])
+        with patch.dict(p["publish_or_confirm"].__globals__, {"request": mock}):
+            self.assertEqual(p["publish_or_confirm"](self.merged, self.rows, self.protected_rows)["hash"], "ok")
+        self.assertEqual(mock.call_count, 2)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
