@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Daily UTC supply accounting, backed by cached archival RPC block responses."""
-import concurrent.futures,datetime as dt,json
+import argparse,concurrent.futures,datetime as dt,json
 from decimal import Decimal
 import refresh_supply as s
 
@@ -33,4 +33,9 @@ def collect(start='2026-04-01',end=None):
  s.apply(h)
  print('Saved daily supply:',len(rows),'days; exact monthly reconciliation passed',flush=True)
  return result
-if __name__=='__main__':collect()
+if __name__=='__main__':
+ p=argparse.ArgumentParser()
+ p.add_argument('--start',default='2026-04-01')
+ p.add_argument('--end')
+ a=p.parse_args()
+ collect(a.start,a.end)
