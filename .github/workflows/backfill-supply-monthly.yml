@@ -2,6 +2,19 @@ name: Verify historical NEAR supply month by month
 
 on:
   workflow_dispatch:
+    inputs:
+      month:
+        description: 'UTC month to re-verify (one month per run)'
+        required: true
+        type: choice
+        options:
+          - '2026-04'
+          - '2026-05'
+          - '2026-06'
+          - '2026-07'
+          - '2026-08'
+          - '2026-09'
+          - '2026-10'
 
 permissions:
   contents: read
@@ -12,7 +25,6 @@ jobs:
     timeout-minutes: 55
     env:
       FASTNEAR_API_KEY: ${{ secrets.FASTNEAR_API_KEY }}
-      OWNER_API_TOKEN: ${{ secrets.OWNER_API_TOKEN }}
       NEAR_RPC_URL: https://archival-rpc.mainnet.fastnear.com
     steps:
       - uses: actions/checkout@v4
@@ -26,35 +38,28 @@ jobs:
             echo "::error::FASTNEAR_API_KEY GitHub Actions secret is missing; refusing unauthenticated historical backfill."
             exit 1
           fi
-      - name: Require Cloudflare publishing credentials
+      - name: Collect and independently re-verify selected month
         shell: bash
-        run: |
-          if [ -z "$OWNER_API_TOKEN" ]; then
-            echo "::error::OWNER_API_TOKEN GitHub Actions secret is missing."
-            exit 1
-          fi
-      - name: Collect, verify and publish each completed month
-        shell: bash
+        env:
+          SELECTED_MONTH: ${{ inputs.month }}
         run: |
           set -euo pipefail
           mkdir -p backfill-results
-          for month in 04 05 06 07 08 09 10; do
-            start="2026-$month-01"
-            end=$(python -c "import datetime as d,sys; x=d.date.fromisoformat(sys.argv[1]); print((x.replace(day=28)+d.timedelta(days=4)).replace(day=1).isoformat())" "$start")
-            echo "::group::Verified $start to $end"
-            python scripts/refresh_supply_daily.py --start "$start" --end "$end"
-            python scripts/validate_supply.py
-            cp dist/data/supply-daily.json "backfill-results/$start-daily.json"
-            cp dist/data/supply-history.json "backfill-results/$start-history.json"
-            cp dist/data/supply-validation.json "backfill-results/$start-validation.json"
-            python scripts/publish_verified_supply.py
-            echo "::endgroup::"
-          done
+          start="${SELECTED_MONTH}-01"
+          end=$(python -c "import datetime as d,sys; x=d.date.fromisoformat(sys.argv[1]); print((x.replace(day=28)+d.timedelta(days=4)).replace(day=1).isoformat())" "$start")
+          echo "::group::Internal re-verification $start to $end"
+          python scripts/refresh_supply_daily.py --start "$start" --end "$end"
+          python scripts/validate_supply.py
+          cp dist/data/supply-daily.json "backfill-results/$start-daily.json"
+          cp dist/data/supply-history.json "backfill-results/$start-history.json"
+          cp dist/data/supply-validation.json "backfill-results/$start-validation.json"
+          echo "Internal check completed. No production data has been changed."
+          echo "::endgroup::"
       - name: Upload verified monthly checkpoints
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: near-supply-verified-months
+          name: near-supply-internal-review-${{ inputs.month }}
           path: backfill-results/
           if-no-files-found: warn
           retention-days: 7
