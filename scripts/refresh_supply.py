@@ -116,7 +116,7 @@ def collect(start='2026-10-01',end=None,workers=8):
  events=sorted(byhash.values(),key=lambda e:e['block']['height'])
  for a,b in zip(events,events[1:]):assert b['block']['epoch_id']==a['previousBlock']['hash'],f'Epoch gap at {a["block"]["height"]} to {b["block"]["height"]}'
  assert int(events[0]['block']['timestamp_nanosec'])<=ns(start)
- assert events[-1]['block']['timestamp_nanosec']>=ns(end),'Missing closing epoch coverage'
+ assert int(events[-1]['block']['timestamp_nanosec'])>=ns(end),'Missing closing epoch coverage'
  paid=None
  if last>=latest['epoch_start_height']:
   paid=sum(int(v)for v in latest['validator_reward_paid_prev_epoch'].values())
