@@ -4,6 +4,7 @@ import datetime as dt
 import json
 import os
 import re
+import subprocess
 import sys
 import time
 import urllib.error
@@ -107,16 +108,19 @@ def run():
     log_error = None
     if job_id:
         try:
-            req = urllib.request.Request(f"{BASE}/repos/{REPO}/actions/jobs/{job_id}/logs",
-                                         headers={"Authorization": "Bearer " + TOKEN, "User-Agent": AGENT})
-            with urllib.request.urlopen(req, timeout=25) as response:
-                logs = response.read(2_000_000).decode("utf-8", "replace")
-        except urllib.error.HTTPError as error:
-            log_error = {"status": error.code, "type": "HTTPError"}
-            print("Job logs unavailable: HTTP", error.code)
+            result = subprocess.run(
+                ["gh", "run", "view", run_id, "--repo", REPO, "--job", str(job_id), "--log"],
+                capture_output=True, text=True, timeout=35, check=False,
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                logs = result.stdout[-2_000_000:]
+                print("Retrieved job logs using GitHub CLI")
+            else:
+                log_error = {"type": "GitHubCLI", "exit_code": result.returncode}
+                print("GitHub CLI log retrieval unavailable; exit code:", result.returncode)
         except Exception as error:
             log_error = {"type": type(error).__name__}
-            print("Job logs unavailable:", type(error).__name__)
+            print("GitHub CLI log retrieval unavailable:", type(error).__name__)
     probes = inspect_worker()
     category, recommendation = classify(step, logs, probes)
     url = workflow.get("html_url", f"https://github.com/{REPO}/actions/runs/{run_id}")
