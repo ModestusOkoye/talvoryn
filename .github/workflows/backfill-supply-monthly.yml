@@ -15,6 +15,14 @@ on:
           - '2026-08'
           - '2026-09'
           - '2026-10'
+      scope:
+        description: 'Run a short 3-day diagnostic before a full month'
+        required: true
+        type: choice
+        default: preflight
+        options:
+          - preflight
+          - full-month
 
 permissions:
   contents: read
@@ -38,22 +46,28 @@ jobs:
             echo "::error::FASTNEAR_API_KEY GitHub Actions secret is missing; refusing unauthenticated historical backfill."
             exit 1
           fi
+      - name: Test collector error handling offline
+        run: python scripts/test_supply_preflight.py
       - name: Collect and independently re-verify selected month
         shell: bash
         env:
           SELECTED_MONTH: ${{ inputs.month }}
+          SCOPE: ${{ inputs.scope }}
         run: |
           set -euo pipefail
           mkdir -p backfill-results
           start="${SELECTED_MONTH}-01"
           end=$(python -c "import datetime as d,sys; x=d.date.fromisoformat(sys.argv[1]); print((x.replace(day=28)+d.timedelta(days=4)).replace(day=1).isoformat())" "$start")
-          echo "::group::Internal re-verification $start to $end"
+          if [ "$SCOPE" = preflight ]; then
+            end=$(python -c "import datetime as d,sys; print((d.date.fromisoformat(sys.argv[1])+d.timedelta(days=3)).isoformat())" "$start")
+          fi
+          echo "::group::Internal re-verification $start to $end ($SCOPE)"
           python scripts/refresh_supply_daily.py --start "$start" --end "$end"
           python scripts/validate_supply.py
           cp dist/data/supply-daily.json "backfill-results/$start-daily.json"
           cp dist/data/supply-history.json "backfill-results/$start-history.json"
           cp dist/data/supply-validation.json "backfill-results/$start-validation.json"
-          echo "Internal check completed. No production data has been changed."
+          echo "Internal $SCOPE check completed. No production data has been changed."
           echo "::endgroup::"
       - name: Upload verified monthly checkpoints
         if: always()
