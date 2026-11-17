@@ -9,19 +9,19 @@
 | Buyback receipts | https://transfers.main.fastnear.com/v0/transfers | Hourly bounded pagination | Arrival timestamp; incomplete ranges remain pending |
 | Finalised supply observation | https://rpc.mainnet.near.org | Hourly check | Finalised block timestamp, hash and exact total supply |
 | Historical issuance/burns | https://archival-rpc.mainnet.fastnear.com and https://mainnet.neardata.xyz | Explicit archival script; not currently automated | Verified epoch and UTC boundaries only |
-| Sampled whale activity | FastNEAR transfers and finalised NEAR RPC | Every third UTC hour, separate minute-17 trigger | Per-wallet observation times; cohort coverage can lag |
+| Sampled whale activity | FastNEAR transfers and finalised NEAR RPC | Every third UTC hour, two bounded wallet batches at minutes 17 and 27 | Per-wallet observation times; cohort coverage can lag |
 | Integrators | https://nearstats.org/api/integrators.json | Hourly check | Provider dataEndsAt and generatedAt |
-| Catalysts | https://gov.near.org, https://github.com/near/NEPs, https://near.org | Existing dated reviewed records only in this deployment | Story dates and checkedAt; no claim of a live editorial feed |
+| Catalysts | https://gov.near.org, https://github.com/near/NEPs, https://near.org | Hourly discovery checks produce pending source candidates; separately reviewed items appear in the published feed | Discovery checkedAt is separate from publication/review dates; discovery is not automatic editorial approval |
 
-The public Methodology Data Freshness table has received real D1-backed status records for activity, prices, finalised supply, buybacks and integrators. These confirm successful checks at the recorded times, not continuous future Cron execution. The separate whale job still lacks a reported successful refresh.
+The public Methodology and [production health endpoint](https://talvoryn.pages.dev/api/health) report D1-backed checks. On 16 November 2026, the hourly jobs (activity, markets, finalised supply, buybacks, integrators, catalyst discovery and X) recorded successful runs around 20:07 UTC. Whale monitoring recorded a successful run at 18:30:52 UTC, covering all **48 of 48** monitored wallets, with no pending wallet work. These timestamps document recorded successes, not a guarantee that all future runs will succeed.
 
 `dist/data/source-status.json` records the captured timestamps from this recovery. Source cutoffs differ. Data files expose dates rather than relabelling the whole dashboard as live. Provider revisions may change historical activity; immutable stored revisions preserve the previous dataset. Source errors retain the last verified payload and update health separately.
 
 Buyback amounts do not prove trading execution prices. The final-block supply job cannot fill missing gross issuance or burns. Some archival RPC endpoints return 429; existing evidence is retained, and incomplete daily history stays null. Wallet coverage is sampled, not a network-wide holder ranking. Integrator identity mappings belong to the provider.
 
-## Deferred follow-up
+## Whale monitoring — production coverage
 
-- Investigate the whale activity refresh: the public Data Freshness table currently reports no successful-check timestamp or observation cutoff for the three-hour whale job. Check Cron execution, job health, verified roster, rate limits and per-wallet coverage before changing the published readings. Do not substitute saved snapshot dates for successful live job status.
+The live [whale API](https://talvoryn.pages.dev/api/whales) exposes the selected 48-wallet sample, published exchange registry, verified qualifying movements, reporting cutoffs and daily/weekly/monthly completeness. At the recorded 16 November 2026 production check, all three windows reported complete sample coverage. This is **sample completeness under the defined registry and observation rules**, not proof of a full network-wide whale ranking or of trades at unidentified venues. The collector stores incomplete-page checkpoints and limits provider requests; source rate limits can delay subsequent runs. Unknown counterparties are preserved for separate research and are not counted as verified exchange flows.
 
 ## Historical issuance and burns — current coverage
 
@@ -29,4 +29,4 @@ The existing historical reconstruction is verified only through the **exclusive 
 
 ## Catalyst source monitoring
 
-The current production Worker source now includes `worker/catalyst-discovery.mjs`, which checks the latest NEAR governance topics and NEP pull requests during its hourly ingestion job and stores deduplicated findings as **private candidates** in D1. It does not automatically publish Catalyst summaries or update the editorial feed. An owner-authenticated GET to `/api/admin/catalyst-candidates` can inspect the pending findings after the Worker version is deployed. A source-check failure is recorded rather than treated as fresh editorial coverage. Actual production execution must be confirmed through `/api/health` after deployment; GitHub commits alone do not activate the deployed Worker.
+`worker/catalyst-discovery.mjs` is deployed as part of the hourly ingestion workflow. The live health endpoint recorded a **successful catalyst-discovery check at 2026-11-16T20:07:52Z**. Source checks collect and deduplicate private candidates; they do **not** automatically establish review, AI interpretation, or publication. The public [Catalysts feed](https://talvoryn.pages.dev/api/catalysts) contains separately published records. Review each item's original source and dated evidence; an upstream source failure must not be presented as a new verified story. The private candidate endpoint requires owner authentication.
