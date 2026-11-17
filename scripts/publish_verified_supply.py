@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""Merge verified monthly supply into live D1 via existing authenticated Worker API.
-Only fills missing values; never changes conflicting verified yocto figures.
-"""
+"""Safely append blockchain-verified daily supply to the live D1 dataset."""
 import datetime as dt
 import json
 import os
@@ -10,68 +8,106 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-URL = os.environ.get("TALVORYN_WORKER_URL", "https://talvoryn-data.paulsimonmodus.workers.dev").rstrip("/")
+URL = (os.environ.get("TALVORYN_WORKER_URL") or "https://talvoryn-data.paulsimonmodus.workers.dev").rstrip("/")
 TOKEN = os.environ.get("OWNER_API_TOKEN")
-if not TOKEN:
-    sys.exit("OWNER_API_TOKEN GitHub secret is required")
+PROTECTED_BEFORE = "2026-11-01"
+
+def require(condition, message):
+    if not condition:
+        sys.exit("SAFE PUBLISH REFUSED: " + message)
 
 def request(path, data=None, authorized=False):
     headers = {"Accept": "application/json"}
     if data is not None:
         headers["Content-Type"] = "application/json"
     if authorized:
+        require(bool(TOKEN), "OWNER_API_TOKEN missing")
         headers["Authorization"] = "Bearer " + TOKEN
     req = urllib.request.Request(URL + path, data=json.dumps(data).encode() if data is not None else None, headers=headers, method="POST" if data is not None else "GET")
     with urllib.request.urlopen(req, timeout=120) as response:
         return json.load(response)
 
-incoming = json.loads((ROOT / "dist/data/supply-daily.json").read_text())
-report = json.loads((ROOT / "dist/data/supply-validation.json").read_text())
-if report.get("allBlockchainChecksPassed") is not True or report.get("dailySupplyConservation") != "passed":
-    sys.exit("Refusing unverified supply import")
-rows = incoming.get("daily", [])
-if not rows or any(not isinstance(r.get("mintYocto"), str) or not isinstance(r.get("burnYocto"), str) for r in rows):
-    sys.exit("Incomplete daily yocto accounting")
-for r in rows:
-    if int(r["mintYocto"]) < 0 or int(r["burnYocto"]) < 0:
-        sys.exit("Negative supply amount")
-if [r["date"] for r in rows] != sorted(set(r["date"] for r in rows)):
-    sys.exit("Duplicate or unordered dates")
+def indexed(rows, label):
+    require(isinstance(rows, list), label + " daily rows missing")
+    dates = [r["date"] for r in rows]
+    require(dates == sorted(set(dates)), label + " dates duplicated or unordered")
+    return {r["date"]: r for r in rows}
 
-live = request("/data/supply-daily.json")
-existing = {r["date"]: r for r in live.get("daily", [])}
-changed = 0
-for row in rows:
-    day = row["date"]
-    prior = existing.get(day)
-    if prior is None:
-        existing[day] = row
-        changed += 1
-        continue
-    for field in ("mintYocto", "burnYocto"):
-        a, b = prior.get(field), row.get(field)
-        if a is not None and b is not None and int(a) != int(b):
-            sys.exit(f"Verified conflict at {day} {field}; refusing all changes")
-    for field in ("mint", "burn", "mintYocto", "burnYocto", "startBlock", "endBlock"):
-        if prior.get(field) is None and row.get(field) is not None:
-            prior[field] = row[field]
-            changed += 1
+def validate():
+    incoming = json.loads((ROOT / "dist/data/supply-daily.json").read_text())
+    report = json.loads((ROOT / "dist/data/supply-validation.json").read_text())
+    require(report.get("allBlockchainChecksPassed") is True and report.get("dailySupplyConservation") == "passed", "blockchain validation failed")
+    require(incoming.get("dailyMonthlyReconciliation") == "passed", "monthly reconciliation failed")
+    rows = indexed(incoming.get("daily"), "incoming")
+    require(bool(rows), "no incoming days")
+    today = dt.datetime.now(dt.timezone.utc).date()
+    for day, row in rows.items():
+        parsed = dt.date.fromisoformat(day)
+        require(day >= PROTECTED_BEFORE and parsed < today, "protected or incomplete UTC day: " + day)
+        for field in ("mintYocto", "burnYocto", "startBlock", "endBlock"):
+            require(isinstance(row.get(field), str) and bool(row[field]), "missing verified " + field + " on " + day)
+        require(int(row["mintYocto"]) >= 0 and int(row["burnYocto"]) >= 0, "negative yocto on " + day)
+    boundaries = incoming.get("boundaries")
+    require(isinstance(boundaries, dict), "incoming boundary evidence missing")
+    for day in rows:
+        next_day = (dt.date.fromisoformat(day) + dt.timedelta(days=1)).isoformat()
+        require(day in boundaries and next_day in boundaries, "boundary evidence missing for " + day)
+    return incoming, rows
 
-merged = {**live, "daily": [existing[k] for k in sorted(existing)]}
-merged["meta"] = {**live.get("meta", {}), "lastVerifiedMergeAt": dt.datetime.now(dt.timezone.utc).isoformat(), "lastVerifiedMergeThrough": rows[-1]["date"]}
-print(f"Verified merge: {len(rows)} incoming days, {len(merged['daily'])} total days, {changed} additions", flush=True)
-if not changed:
-    print("No missing values; skipping import")
-    sys.exit(0)
-result = request("/api/admin/import/supply-daily", merged, authorized=True)
-if not result.get("hash"):
-    sys.exit("Cloudflare import did not return a dataset hash")
-confirmed = request("/data/supply-daily.json")
-after = {r["date"]: r for r in confirmed.get("daily", [])}
-for row in rows:
-    actual = after.get(row["date"])
-    if actual is None or any(str(actual.get(k)) != row[k] for k in ("mintYocto", "burnYocto")):
-        sys.exit("Live verification failed after import")
-print(f"Cloudflare D1 import and verification succeeded: {result['hash']}", flush=True)
-request("/api/admin/refresh", {}, authorized=True)
-print("Requested live performance refresh", flush=True)
+def merge(incoming, rows, live):
+    old = indexed(live.get("daily"), "live")
+    original_protected = {d: json.dumps(r, sort_keys=True) for d, r in old.items() if d < PROTECTED_BEFORE}
+    updated = {d: dict(r) for d, r in old.items()}
+    new_days = []
+    for day, row in rows.items():
+        prior = updated.get(day)
+        if prior is None:
+            updated[day] = dict(row)
+            new_days.append(day)
+            continue
+        for field in ("mintYocto", "burnYocto", "startBlock", "endBlock"):
+            require(prior.get(field) is not None and str(prior[field]) == str(row[field]), "existing day differs: " + day + " " + field)
+        for field in ("mint", "burn"):
+            if prior.get(field) is not None:
+                require(abs(float(prior[field]) - float(row[field])) < 1e-8, "existing amount differs: " + day + " " + field)
+    require(all(json.dumps(updated[d], sort_keys=True) == value for d, value in original_protected.items()), "historical rows changed")
+    existing_boundaries = dict(live.get("boundaries") or {})
+    for day, evidence in incoming["boundaries"].items():
+        if day in existing_boundaries:
+            require(existing_boundaries[day] == evidence, "boundary evidence conflict: " + day)
+        else:
+            existing_boundaries[day] = evidence
+    merged = dict(live)
+    merged["daily"] = [updated[d] for d in sorted(updated)]
+    merged["boundaries"] = existing_boundaries
+    merged["meta"] = {**live.get("meta", {}), "lastVerifiedMergeThrough": max(rows), "lastVerifiedMergeAt": dt.datetime.now(dt.timezone.utc).isoformat()}
+    return merged, new_days, original_protected
+
+def main():
+    incoming, rows = validate()
+    live = request("/data/supply-daily.json")
+    merged, new_days, protected = merge(incoming, rows, live)
+    print("Checked", len(rows), "verified days;", len(new_days), "new days;", len(protected), "protected historical rows", flush=True)
+    if not new_days:
+        print("No new dates; no production write needed", flush=True)
+        return
+    require(bool(TOKEN), "OWNER_API_TOKEN missing")
+    # Recheck immediately before the write to avoid overwriting an updated dataset.
+    latest = request("/data/supply-daily.json")
+    require(latest == live, "live dataset changed since comparison")
+    result = request("/api/admin/import/supply-daily", merged, authorized=True)
+    require(bool(result.get("hash")), "Cloudflare import did not return a hash")
+    confirmed = request("/data/supply-daily.json")
+    after = indexed(confirmed.get("daily"), "confirmed")
+    for day, row in rows.items():
+        require(day in after, "missing published day " + day)
+        for field in ("mintYocto", "burnYocto", "startBlock", "endBlock"):
+            require(str(after[day].get(field)) == str(row[field]), "readback mismatch " + day + " " + field)
+    for day, serialized in protected.items():
+        require(json.dumps(after.get(day), sort_keys=True) == serialized, "protected history changed: " + day)
+    print("Published and verified", len(new_days), "new dates, hash:", result["hash"], flush=True)
+    request("/api/admin/refresh", {}, authorized=True)
+    print("Requested performance refresh", flush=True)
+
+if __name__ == "__main__":
+    main()
