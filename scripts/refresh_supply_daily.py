@@ -9,7 +9,7 @@ def collect(start='2026-04-01',end=None):
  h=s.collect(start,end,workers=2)
  head=s.block(h['meta']['finalisedHead']['hash'])
  days=[];d=dt.date.fromisoformat(start)
- while d.isoformat()<=end:days.append(d.isoformat());d+=dt.timedelta(days=1)
+ while d.isoformat()<end:days.append(d.isoformat());d+=dt.timedelta(days=1)
  bounds=dict(h['boundaries'])
  missing=[d for d in days if d not in bounds]
  with concurrent.futures.ThreadPoolExecutor(2) as pool:
