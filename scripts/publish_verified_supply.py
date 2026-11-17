@@ -21,7 +21,7 @@ def require(condition, message):
 RETRYABLE_READ_STATUSES = {429, 500, 502, 503, 504}
 MAX_READ_ATTEMPTS = 3
 
-def request(path, data=None, authorized=False):
+def request(path, data=None, authorized=False, expected_revision=None):
     """Retry only GET requests; never blindly replay a possibly committed POST."""
     headers = {"Accept": "application/json", "User-Agent": "Talvoryn-diagnostic/1.0"}
     if data is not None:
@@ -29,6 +29,9 @@ def request(path, data=None, authorized=False):
     if authorized:
         require(bool(TOKEN), "OWNER_API_TOKEN missing")
         headers["Authorization"] = "Bearer " + TOKEN
+    if expected_revision is not None:
+        require(bool(authorized) and isinstance(expected_revision, str) and len(expected_revision) == 64, "invalid expected revision")
+        headers["If-Match"] = expected_revision
     method = "POST" if data is not None else "GET"
     payload = json.dumps(data).encode() if data is not None else None
     attempts = MAX_READ_ATTEMPTS if method == "GET" else 1
@@ -112,10 +115,10 @@ def merge(incoming, rows, live):
     merged["meta"] = {**live.get("meta", {}), "lastVerifiedMergeThrough": max(rows), "lastVerifiedMergeAt": dt.datetime.now(dt.timezone.utc).isoformat()}
     return merged, new_days, original_protected
 
-def publish_or_confirm(merged, rows, protected):
+def publish_or_confirm(merged, rows, protected, expected_revision):
     """Resolve an ambiguous POST outcome by readback, never by replaying the POST."""
     try:
-        result = request("/api/admin/import/supply-daily", merged, authorized=True)
+        result = request("/api/admin/import/supply-daily", merged, authorized=True, expected_revision=expected_revision)
         require(isinstance(result, dict) and bool(result.get("hash")),
                 "Cloudflare import did not return a hash; write outcome requires inspection")
     except SystemExit as error:
@@ -150,7 +153,10 @@ def main():
     # Recheck immediately before the write to avoid overwriting an updated dataset.
     latest = request("/data/supply-daily.json")
     require(latest == live, "live dataset changed since comparison")
-    result = publish_or_confirm(merged, rows, protected)
+    revision = request("/api/admin/revision/supply-daily", authorized=True)
+    require(isinstance(revision, dict) and isinstance(revision.get("hash"), str), "live dataset revision missing")
+    require(request("/data/supply-daily.json") == live, "live dataset changed before revision-guarded write")
+    result = publish_or_confirm(merged, rows, protected, revision["hash"])
     print("Published and verified", len(new_days), "new dates, hash:", result["hash"], flush=True)
     request("/api/admin/refresh", {}, authorized=True)
     print("Requested performance refresh", flush=True)
