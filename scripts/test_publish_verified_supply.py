@@ -72,8 +72,8 @@ class RetrySafety(unittest.TestCase):
         error = urllib.error.HTTPError("https://example.test", 503, "Unavailable", {}, None)
         response = MagicMock()
         response.__enter__.return_value = response
-        with patch.object(p["urllib"].request, "urlopen", side_effect=[error, error, response]) as call, \\
-             patch.object(p["time"], "sleep") as sleep, \\
+        with patch.object(p["urllib"].request, "urlopen", side_effect=[error, error, response]) as call, \
+             patch.object(p["time"], "sleep") as sleep, \
              patch.object(p["json"], "load", return_value={"ok": True}):
             self.assertEqual(p["request"]("/data/supply-daily.json"), {"ok": True})
             self.assertEqual(call.call_count, 3)
