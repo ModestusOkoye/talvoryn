@@ -4,6 +4,8 @@ import datetime as dt
 import json
 import runpy
 import unittest
+import urllib.error
+from unittest.mock import patch, MagicMock
 
 p = runpy.run_path("scripts/publish_verified_supply.py", run_name="supply_test")
 merge = p["merge"]
@@ -64,6 +66,38 @@ class PublisherSafety(unittest.TestCase):
         before = json.dumps(self.live,sort_keys=True)
         merge(self.incoming, {today:self.new}, self.live)
         self.assertEqual(json.dumps(self.live,sort_keys=True),before)
+
+class RetrySafety(unittest.TestCase):
+    def test_transient_get_recovers_after_two_failures(self):
+        error = urllib.error.HTTPError("https://example.test", 503, "Unavailable", {}, None)
+        response = MagicMock()
+        response.__enter__.return_value = response
+        with patch.object(p["urllib"].request, "urlopen", side_effect=[error, error, response]) as call, \\
+             patch.object(p["time"], "sleep") as sleep, \\
+             patch.object(p["json"], "load", return_value={"ok": True}):
+            self.assertEqual(p["request"]("/data/supply-daily.json"), {"ok": True})
+            self.assertEqual(call.call_count, 3)
+            self.assertEqual(sleep.call_count, 2)
+
+    def test_post_503_is_never_replayed(self):
+        error = urllib.error.HTTPError("https://example.test", 503, "Unavailable", {}, None)
+        with patch.object(p["urllib"].request, "urlopen", side_effect=error) as call:
+            with self.assertRaises(SystemExit):
+                p["request"]("/api/admin/import/supply-daily", {"daily": []}, authorized=False)
+            self.assertEqual(call.call_count, 1)
+
+    def test_get_403_not_retried(self):
+        error = urllib.error.HTTPError("https://example.test", 403, "Forbidden", {}, None)
+        with patch.object(p["urllib"].request, "urlopen", side_effect=error) as call:
+            with self.assertRaises(SystemExit):
+                p["request"]("/data/supply-daily.json")
+            self.assertEqual(call.call_count, 1)
+
+    def test_transport_failure_post_not_replayed(self):
+        with patch.object(p["urllib"].request, "urlopen", side_effect=TimeoutError()) as call:
+            with self.assertRaises(SystemExit):
+                p["request"]("/api/admin/import/supply-daily", {}, authorized=False)
+            self.assertEqual(call.call_count, 1)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
