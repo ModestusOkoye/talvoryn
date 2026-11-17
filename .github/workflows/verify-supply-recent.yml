@@ -1,7 +1,7 @@
 name: Verify recent NEAR daily supply (staging)
 
 # Daily automatic UTC verification with downloadable evidence.
-# This workflow intentionally does not import into production D1.
+# Production publication remains gated by the SUPPLY_AUTO_PUBLISH repository variable.
 on:
   schedule:
     - cron: '23 3 * * *'
