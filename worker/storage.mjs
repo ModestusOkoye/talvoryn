@@ -3,3 +3,21 @@ export async function read(db,name){const r=await db.prepare('SELECT v.payload F
 export async function write(db,name,data,through=null){const payload=JSON.stringify(data);if(new TextEncoder().encode(payload).length>1900000)throw Error('Dataset exceeds D1 row budget');const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(payload))),b=>b.toString(16).padStart(2,'0')).join('');await db.batch([db.prepare('INSERT OR IGNORE INTO dataset_versions(name,hash,payload,source_through,fetched_at) VALUES(?,?,?,?,?)').bind(name,hash,payload,through,new Date().toISOString()),db.prepare('INSERT INTO dataset_current(name,hash) VALUES(?,?) ON CONFLICT(name) DO UPDATE SET hash=excluded.hash').bind(name,hash)]);return hash}
 export async function status(db,name,value){await db.prepare('INSERT INTO job_status(name,payload) VALUES(?,?) ON CONFLICT(name) DO UPDATE SET payload=excluded.payload').bind(name,JSON.stringify(value)).run()}
 export async function health(db){return (await db.prepare('SELECT name,payload FROM job_status ORDER BY name').all()).results.map(r=>({name:r.name,...JSON.parse(r.payload)}))}
+
+/** Atomically advance the current pointer only if it still equals expectedHash. */
+export async function writeIfCurrent(db,name,data,expectedHash,through=null){
+  if(typeof expectedHash!=='string'||!(/^[a-f0-9]{64}$/.test(expectedHash)))throw Error('Expected revision required');
+  const payload=JSON.stringify(data);
+  if(new TextEncoder().encode(payload).length>1900000)throw Error('Dataset exceeds D1 row budget');
+  const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(payload))),b=>b.toString(16).padStart(2,'0')).join('');
+  const results=await db.batch([
+    db.prepare('INSERT OR IGNORE INTO dataset_versions(name,hash,payload,source_through,fetched_at) VALUES(?,?,?,?,?)').bind(name,hash,payload,through,new Date().toISOString()),
+    db.prepare('UPDATE dataset_current SET hash=? WHERE name=? AND hash=?').bind(hash,name,expectedHash)
+  ]);
+  if(results[1]?.meta?.changes!==1)return {conflict:true};
+  return {hash};
+}
+export async function currentRevision(db,name){
+  const row=await db.prepare('SELECT hash FROM dataset_current WHERE name=?').bind(name).first();
+  return row?.hash||null;
+}
