@@ -1,0 +1,51 @@
+name: Verify historical NEAR supply month by month
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      FASTNEAR_API_KEY: ${{ secrets.FASTNEAR_API_KEY }}
+      NEAR_RPC_URL: https://archival-rpc.mainnet.fastnear.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Require authenticated archival RPC
+        shell: bash
+        run: |
+          if [ -z "$FASTNEAR_API_KEY" ]; then
+            echo "::error::FASTNEAR_API_KEY GitHub Actions secret is missing; refusing unauthenticated historical backfill."
+            exit 1
+          fi
+      - name: Collect and verify each completed month
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p backfill-results
+          for month in 04 05 06 07 08 09 10; do
+            start="2026-$month-01"
+            end=$(python -c "import datetime as d,sys; x=d.date.fromisoformat(sys.argv[1]); print((x.replace(day=28)+d.timedelta(days=4)).replace(day=1).isoformat())" "$start")
+            echo "::group::Verified $start to $end"
+            python scripts/refresh_supply_daily.py --start "$start" --end "$end"
+            python scripts/validate_supply.py
+            cp dist/data/supply-daily.json "backfill-results/$start-daily.json"
+            cp dist/data/supply-history.json "backfill-results/$start-history.json"
+            cp dist/data/supply-validation.json "backfill-results/$start-validation.json"
+            echo "::endgroup::"
+          done
+      - name: Upload verified monthly checkpoints
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: near-supply-verified-months
+          path: backfill-results/
+          if-no-files-found: warn
+          retention-days: 7
