@@ -97,7 +97,7 @@ def collect(start='2026-10-01',end=None,workers=8):
  print('Resolving UTC period boundaries',flush=True)
  with concurrent.futures.ThreadPoolExecutor(3)as pool:bounds=dict(zip(dates,pool.map(lambda d:boundary(d,head),dates)))
  print('UTC boundaries verified',flush=True)
- config=rpc('EXPERIMENTAL_protocol_config',{'block_id':head['header']['hash']});length=config['epoch_length'];begin=bounds[start]['before']['height'];last=bounds[end]['after']['height'];probes=list(range(begin,last+1,length-200))+[last]
+ config=rpc('EXPERIMENTAL_protocol_config',{'block_id':head['header']['hash']});length=config['epoch_length'];begin=bounds[start]['before']['height'];last=bounds[end]['after']['height'];stride=length-200;assert stride>0;probes=list(range(max(1,begin-2*stride),last+2*stride+1,stride))
  def event(probe):
   sample=produced_at_or_before(probe);prev=block(sample['header']['next_epoch_id'])
   for d in range(1,51):
