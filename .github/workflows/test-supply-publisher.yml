@@ -6,6 +6,8 @@ on:
     paths:
       - scripts/publish_verified_supply.py
       - scripts/test_publish_verified_supply.py
+      - scripts/triage_supply_failure.py
+      - scripts/test_triage_supply_failure.py
       - .github/workflows/test-supply-publisher.yml
 
 permissions:
@@ -21,6 +23,8 @@ jobs:
         with:
           python-version: '3.12'
       - name: Compile publisher and tests
-        run: python -m py_compile scripts/publish_verified_supply.py scripts/test_publish_verified_supply.py
+        run: python -m py_compile scripts/publish_verified_supply.py scripts/test_publish_verified_supply.py scripts/triage_supply_failure.py scripts/test_triage_supply_failure.py
       - name: Run offline safety tests (no Cloudflare credentials or network calls)
         run: python scripts/test_publish_verified_supply.py
+      - name: Run incident triage classifier tests (offline)
+        run: python scripts/test_triage_supply_failure.py
