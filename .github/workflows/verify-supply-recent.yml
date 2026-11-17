@@ -81,3 +81,16 @@ jobs:
           path: recent-supply-results/
           if-no-files-found: warn
           retention-days: 7
+
+      - name: Publish verified days to Cloudflare D1 (only when explicitly enabled)
+        if: ${{ success() && vars.SUPPLY_AUTO_PUBLISH == 'enabled' }}
+        env:
+          OWNER_API_TOKEN: ${{ secrets.OWNER_API_TOKEN }}
+          TALVORYN_WORKER_URL: ${{ vars.TALVORYN_WORKER_URL }}
+        run: |
+          set -euo pipefail
+          test -n "$OWNER_API_TOKEN" || { echo "::error::OWNER_API_TOKEN secret is missing"; exit 1; }
+          python scripts/publish_verified_supply.py
+      - name: Explain inactive publishing
+        if: ${{ success() && vars.SUPPLY_AUTO_PUBLISH != 'enabled' }}
+        run: echo "Archival tests passed; publication is gated until SUPPLY_AUTO_PUBLISH repository variable is enabled after live baseline review."
