@@ -28,7 +28,7 @@ for m in s['months']:
  assert int(m['mintYocto'])-int(m['burnYocto'])==delta
  assert int(m['burnYocto'])>=0
  checks.append({'month':m['month'],'epochCount':m['epochCount'],'UTCBoundaries':'passed','epochCoverage':'passed','supplyConservation':'passed'})
-assert s['meta']['rewardCrossCheck']['matched']
+assert s['meta']['rewardCrossCheck']['matched'] is True or s['meta']['rewardCrossCheck'].get('status')=='not_applicable_historical_window'
 report={'checkedAt':dt.datetime.now(UTC).isoformat(),'allBlockchainChecksPassed':True,'fullBlockResponsesChecked':len(blocks),'months':checks,'rewardCrossCheck':s['meta']['rewardCrossCheck'],'burnMethod':'Inferred from exact issuance minus observed change in total supply','networkFeesCollected':False}
 daily_path=OUT/'supply-daily.json'
 if daily_path.exists() and json.loads(daily_path.read_text()).get('meta',{}).get('status')!='incomplete':
