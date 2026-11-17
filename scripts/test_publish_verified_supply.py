@@ -111,7 +111,7 @@ class AmbiguousWriteSafety(unittest.TestCase):
     def test_timeout_after_committed_write_accepts_exact_readback(self):
         with patch.dict(p["publish_or_confirm"].__globals__, {"request": unittest.mock.Mock(
                 side_effect=[SystemExit("timeout"), self.merged, self.merged])}) as env:
-            result = p["publish_or_confirm"](self.merged, self.rows, self.protected_rows)
+            result = p["publish_or_confirm"](self.merged, self.rows, self.protected_rows, "a"*64)
             self.assertEqual(result["hash"], "confirmed-by-full-readback")
             self.assertEqual(env["request"].call_count, 3)
 
@@ -120,20 +120,20 @@ class AmbiguousWriteSafety(unittest.TestCase):
         mock = unittest.mock.Mock(side_effect=[SystemExit("timeout"), incomplete])
         with patch.dict(p["publish_or_confirm"].__globals__, {"request": mock}):
             with self.assertRaises(SystemExit):
-                p["publish_or_confirm"](self.merged, self.rows, self.protected_rows)
+                p["publish_or_confirm"](self.merged, self.rows, self.protected_rows, "a"*64)
         self.assertEqual(mock.call_count, 2)
 
     def test_success_response_but_wrong_readback_is_refused(self):
         mock = unittest.mock.Mock(side_effect=[{"hash": "ok"}, {**self.merged, "daily": [self.protected]}])
         with patch.dict(p["publish_or_confirm"].__globals__, {"request": mock}):
             with self.assertRaises(SystemExit):
-                p["publish_or_confirm"](self.merged, self.rows, self.protected_rows)
+                p["publish_or_confirm"](self.merged, self.rows, self.protected_rows, "a"*64)
         self.assertEqual(mock.call_count, 2)
 
     def test_success_response_and_exact_readback(self):
         mock = unittest.mock.Mock(side_effect=[{"hash": "ok"}, self.merged])
         with patch.dict(p["publish_or_confirm"].__globals__, {"request": mock}):
-            self.assertEqual(p["publish_or_confirm"](self.merged, self.rows, self.protected_rows)["hash"], "ok")
+            self.assertEqual(p["publish_or_confirm"](self.merged, self.rows, self.protected_rows, "a"*64)["hash"], "ok")
         self.assertEqual(mock.call_count, 2)
 
 if __name__ == "__main__":
