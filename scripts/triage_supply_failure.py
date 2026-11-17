@@ -72,6 +72,9 @@ def classify(step, logs, probes):
         return ("Missing required secret", "Review repository Actions secrets; do not paste credentials into issues.")
     if "timed out" in sample or "timeout" in sample or "502" in sample or "503" in sample:
         return ("Possible transient dependency failure", "Retry safe reads with bounded backoff; do not replay a write without verifying the previous outcome.")
+    if "publish verified days" in step.lower() and not logs:
+        return ("Publication failed; GitHub job logs inaccessible",
+                "Cloudflare read probes alone cannot identify the failed request. Inspect the original run publication step and GitHub Actions log-access permissions; do not change production data.")
     if "reconstruct" in step.lower() or "validate" in step.lower():
         return ("Blockchain verification failed", "Inspect archival RPC consistency and validation artifacts; do not publish unverified data.")
     return ("Unclassified workflow failure", "Review the failed step and original run logs. No automated production repair is permitted.")
@@ -101,20 +104,25 @@ def run():
     step = failures[0][1]["name"] if failures else "Unknown failed step"
     job_id = failures[0][0]["id"] if failures else (jobs[0]["id"] if jobs else None)
     logs = ""
+    log_error = None
     if job_id:
         try:
             req = urllib.request.Request(f"{BASE}/repos/{REPO}/actions/jobs/{job_id}/logs",
                                          headers={"Authorization": "Bearer " + TOKEN, "User-Agent": AGENT})
             with urllib.request.urlopen(req, timeout=25) as response:
                 logs = response.read(2_000_000).decode("utf-8", "replace")
+        except urllib.error.HTTPError as error:
+            log_error = {"status": error.code, "type": "HTTPError"}
+            print("Job logs unavailable: HTTP", error.code)
         except Exception as error:
+            log_error = {"type": type(error).__name__}
             print("Job logs unavailable:", type(error).__name__)
     probes = inspect_worker()
     category, recommendation = classify(step, logs, probes)
     url = workflow.get("html_url", f"https://github.com/{REPO}/actions/runs/{run_id}")
     summary = {"run_id": run_id, "run_url": url, "failed_step": step,
                "classification": category, "recommendation": recommendation,
-               "worker_probes": probes,
+               "worker_probes": probes, "log_access_error": log_error,
                "observed_at": dt.datetime.now(dt.timezone.utc).isoformat()}
     Path("supply-incident-triage.json").write_text(json.dumps(summary, indent=2) + "\n")
     print(json.dumps(summary, indent=2))
