@@ -112,6 +112,32 @@ def merge(incoming, rows, live):
     merged["meta"] = {**live.get("meta", {}), "lastVerifiedMergeThrough": max(rows), "lastVerifiedMergeAt": dt.datetime.now(dt.timezone.utc).isoformat()}
     return merged, new_days, original_protected
 
+def publish_or_confirm(merged, rows, protected):
+    """Resolve an ambiguous POST outcome by readback, never by replaying the POST."""
+    try:
+        result = request("/api/admin/import/supply-daily", merged, authorized=True)
+        require(isinstance(result, dict) and bool(result.get("hash")),
+                "Cloudflare import did not return a hash; write outcome requires inspection")
+    except SystemExit as error:
+        print("Publication response failed; checking live dataset before stopping", flush=True)
+        confirmed = request("/data/supply-daily.json")
+        if confirmed != merged:
+            sys.exit("SAFE PUBLISH REFUSED: ambiguous write outcome; live dataset does not exactly match intended payload; manual investigation required")
+        print("Import response failed but complete intended dataset is already live", flush=True)
+        result = {"hash": "confirmed-by-full-readback"}
+    confirmed = request("/data/supply-daily.json")
+    require(confirmed == merged, "post-publication dataset differs from intended payload")
+    after = indexed(confirmed.get("daily"), "confirmed")
+    for day, row in rows.items():
+        require(day in after, "missing published day " + day)
+        for field in ("mintYocto", "burnYocto", "startBlock", "endBlock"):
+            require(str(after[day].get(field)) == str(row[field]),
+                    "readback mismatch " + day + " " + field)
+    for day, serialized in protected.items():
+        require(json.dumps(after.get(day), sort_keys=True) == serialized,
+                "protected history changed: " + day)
+    return result
+
 def main():
     incoming, rows = validate()
     live = request("/data/supply-daily.json")
@@ -124,16 +150,7 @@ def main():
     # Recheck immediately before the write to avoid overwriting an updated dataset.
     latest = request("/data/supply-daily.json")
     require(latest == live, "live dataset changed since comparison")
-    result = request("/api/admin/import/supply-daily", merged, authorized=True)
-    require(bool(result.get("hash")), "Cloudflare import did not return a hash")
-    confirmed = request("/data/supply-daily.json")
-    after = indexed(confirmed.get("daily"), "confirmed")
-    for day, row in rows.items():
-        require(day in after, "missing published day " + day)
-        for field in ("mintYocto", "burnYocto", "startBlock", "endBlock"):
-            require(str(after[day].get(field)) == str(row[field]), "readback mismatch " + day + " " + field)
-    for day, serialized in protected.items():
-        require(json.dumps(after.get(day), sort_keys=True) == serialized, "protected history changed: " + day)
+    result = publish_or_confirm(merged, rows, protected)
     print("Published and verified", len(new_days), "new dates, hash:", result["hash"], flush=True)
     request("/api/admin/refresh", {}, authorized=True)
     print("Requested performance refresh", flush=True)
