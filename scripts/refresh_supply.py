@@ -42,15 +42,23 @@ def rpc(method,params):
    time.sleep(2*(attempt+1))
 
 def block(h):return rpc('block',{'block_id':h})
+def missing_height(error):
+ message=str(error).lower()
+ return any(x in message for x in ('unknown_block','db_not_found','unknown block','block not found','block does not exist','not found','unprocessable entity'))
+def produced_at_or_before(height,limit=80):
+ # Only used for numerical heights: a skipped height is not an epoch boundary.
+ for distance in range(limit):
+  candidate=height-distance
+  if candidate<1:break
+  try:return block(candidate)
+  except (ValueError,RuntimeError) as error:
+   if not missing_height(error):raise
+ raise RuntimeError(f'No produced block found in [{max(1,height-limit+1)}, {height}]')
+
 def ns(d):return int(dt.datetime.fromisoformat(d).replace(tzinfo=UTC).timestamp())*10**9
 def stamp(b):return int(b['header']['timestamp_nanosec'])
 def slim(b):return {k:b['header'][k]for k in ['height','hash','prev_hash','epoch_id','next_epoch_id','timestamp_nanosec','total_supply','latest_protocol_version']}
-def produced(h):
- for d in range(50):
-  try:return block(h-d)
-  except ValueError as e:
-   if 'UNKNOWN_BLOCK'not in str(e)and'DB_NOT_FOUND'not in str(e):raise
- raise RuntimeError('Could not find produced block')
+def produced(h):return produced_at_or_before(h)
 
 def boundary(day,head):
  # Hints are previously verified heights, never accepted without timestamp/link checks.
@@ -89,13 +97,13 @@ def collect(start='2026-10-01',end=None,workers=8):
  print('Resolving UTC period boundaries',flush=True)
  with concurrent.futures.ThreadPoolExecutor(3)as pool:bounds=dict(zip(dates,pool.map(lambda d:boundary(d,head),dates)))
  print('UTC boundaries verified',flush=True)
- config=rpc('EXPERIMENTAL_protocol_config',{'block_id':head['header']['hash']});length=config['epoch_length'];begin=bounds[start]['before']['height'];last=bounds[end]['after']['height'];probes=list(range(begin,last+1,length-200))
+ config=rpc('EXPERIMENTAL_protocol_config',{'block_id':head['header']['hash']});length=config['epoch_length'];begin=bounds[start]['before']['height'];last=bounds[end]['after']['height'];probes=list(range(begin,last+1,length-200))+[last]
  def event(probe):
-  sample=block(probe);prev=block(sample['header']['next_epoch_id'])
+  sample=produced_at_or_before(probe);prev=block(sample['header']['next_epoch_id'])
   for d in range(1,51):
    try:b=block(prev['header']['height']+d);break
-   except ValueError as e:
-    if 'UNKNOWN_BLOCK'not in str(e)and'DB_NOT_FOUND'not in str(e):raise
+   except (ValueError,RuntimeError) as e:
+    if not missing_height(e):raise
   else:raise RuntimeError('Missing epoch successor')
   h=b['header'];p=prev['header'];assert h['prev_hash']==p['hash']and h['epoch_id']!=p['epoch_id']
   burnt=sum(int(c['balance_burnt'])for c in b['chunks']if c['height_included']==h['height']);mint=int(h['total_supply'])-int(p['total_supply'])+burnt;assert mint>=0
@@ -106,7 +114,7 @@ def collect(start='2026-10-01',end=None,workers=8):
    byhash[e['block']['hash']]=e
    if i%20==0:print(f'Checked epoch batch {i+1}/{len(probes)}',flush=True)
  events=sorted(byhash.values(),key=lambda e:e['block']['height'])
- for a,b in zip(events,events[1:]):assert b['block']['epoch_id']==a['previousBlock']['hash'],'Epoch gap'
+ for a,b in zip(events,events[1:]):assert b['block']['epoch_id']==a['previousBlock']['hash'],f'Epoch gap at {a["block"]["height"]} to {b["block"]["height"]}'
  assert int(events[0]['block']['timestamp_nanosec'])<=ns(start)
  assert events[-1]['block']['timestamp_nanosec']>=ns(end),'Missing closing epoch coverage'
  paid=None
