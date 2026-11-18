@@ -1,0 +1,25 @@
+
+const assert=require('node:assert/strict');
+const C=require('../dist/chart-data.js');
+const month=(month,through,complete=false)=>({month,through,complete,days:Number(through.slice(8)),mint:null,burn:null,buy:10});
+const daily=Array.from({length:16},(_,i)=>({date:`2026-11-${String(i+1).padStart(2,'0')}`,mint:100+i,burn:2+i}));
+const perf={months:[month('2026-11','2026-11-17')]};
+const supply={daily};
+let r=C.supplyMonths(perf,supply,{months:[]},{months:[]})[0];
+assert.equal(r.mint,daily.reduce((a,x)=>a+x.mint,0));
+assert.equal(r.burn,daily.reduce((a,x)=>a+x.burn,0));
+assert.equal(r.remaining,null);
+assert.equal(r.offset,null);
+assert.equal(r.supplyThrough,null);
+assert.equal(r.complete,false);
+const gap={daily:daily.filter(x=>x.date!=='2026-11-04')};
+r=C.supplyMonths(perf,gap,{months:[]},{months:[]})[0];
+assert.equal(r.mint,daily.slice(0,3).reduce((a,x)=>a+x.mint,0));
+assert.equal(r.burn,daily.slice(0,3).reduce((a,x)=>a+x.burn,0));
+r=C.supplyMonths(perf,{daily:[]},{months:[]},{months:[]})[0];
+assert.equal(r.mint,null);assert.equal(r.burn,null);
+const oct=month('2026-10','2026-10-31',true);
+r=C.supplyMonths({months:[oct]},supply,{months:[]},{months:[]})[0];
+assert.equal(r.mint,2762296.8095617755);
+assert.equal(r.burn,31459.27145754483);
+console.log('PASS: November totals, gap protection, missing data, October preserved, no added display labels.');
