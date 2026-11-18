@@ -1,0 +1,59 @@
+name: Diagnose supply revision endpoint (read-only)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      OWNER_API_TOKEN: ${{ secrets.OWNER_API_TOKEN }}
+      TALVORYN_WORKER_URL: ${{ vars.TALVORYN_WORKER_URL }}
+    steps:
+      - name: Inspect authenticated revision response without exposing secrets
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, os, re, urllib.request, urllib.error
+          token = os.environ.get("OWNER_API_TOKEN", "")
+          base = (os.environ.get("TALVORYN_WORKER_URL") or "https://talvoryn-data.paulsimonmodus.workers.dev").rstrip("/")
+          if not token:
+              print("Secret configured: false")
+              raise SystemExit(1)
+          print("Secret configured: true")
+          print("Worker URL variable configured:", bool(os.environ.get("TALVORYN_WORKER_URL")))
+          req = urllib.request.Request(
+              base + "/api/admin/revision/supply-daily",
+              headers={"Authorization": "Bearer " + token, "Accept": "application/json"},
+              method="GET",
+          )
+          try:
+              with urllib.request.urlopen(req, timeout=25) as response:
+                  status = response.status
+                  raw = response.read(4096)
+                  content_type = response.headers.get("Content-Type", "")
+          except urllib.error.HTTPError as exc:
+              status = exc.code
+              raw = exc.read(4096)
+              content_type = exc.headers.get("Content-Type", "")
+          except Exception as exc:
+              print("Transport failure type:", type(exc).__name__)
+              raise SystemExit(1)
+          print("HTTP status:", status)
+          print("JSON content type:", "json" in content_type.lower())
+          try:
+              body = json.loads(raw)
+              print("Valid JSON:", True)
+              print("JSON object:", isinstance(body, dict))
+              value = body.get("hash") if isinstance(body, dict) else None
+              print("Hash field present:", isinstance(body, dict) and "hash" in body)
+              print("Valid 64-character revision:", isinstance(value, str) and bool(re.fullmatch(r"[a-f0-9]{64}", value)))
+              print("Error field present:", isinstance(body, dict) and "error" in body)
+          except (ValueError, UnicodeDecodeError):
+              print("Valid JSON:", False)
+          # Never print response body, token, hash, or the full URL.
+          PY
