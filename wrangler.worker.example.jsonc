@@ -3,6 +3,7 @@
   "main": "worker/production.mjs",
   "compatibility_date": "2026-11-14",
   "workers_dev": true,
+  "observability": { "enabled": true },
   "triggers": { "crons": ["7 * * * *", "17 */3 * * *"] },
   "d1_databases": [{ "binding": "DB", "database_name": "talvoryn-data", "database_id": "REPLACE_WITH_CREATED_FREE_D1_ID", "migrations_dir": "migrations" }]
 }
