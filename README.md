@@ -155,6 +155,8 @@ flowchart LR
 
 The website runs on **Cloudflare Pages**, with data collection through **Cloudflare Workers** and persistent datasets in **D1**. Major source checks are scheduled hourly; whale monitoring uses a three-hour schedule. Statistical Forecast model builds are separate from hourly data collection.
 
+**Worker deployment safeguard:** `wrangler.worker.jsonc` is intentionally git-ignored because it contains the production D1 binding. `wrangler.worker.example.jsonc` is the tracked template. Before any future Worker deployment, keep the real D1 database ID, cron triggers and existing secret bindings unchanged, and ensure `"observability": { "enabled": true }` remains in the actual Wrangler config. Worker invocation and persisted logs were enabled in the Cloudflare dashboard on 18 November 2026. The live sampling rate was not independently recorded; do not assume or overwrite it without reviewing the dashboard. Updating this documentation does not deploy the Worker.
+
 More detail: [Technical Methodology](docs/METHODOLOGY.md) · [Data Sources](docs/DATA_SOURCES.md) · [Architecture](docs/ARCHITECTURE.md).
 
 ## Research scope and disclaimer
