@@ -2,3 +2,21 @@ import test from 'node:test';import assert from 'node:assert/strict';import {mkd
 test('disk persistence, revision idempotence and failed writes keep current data',async()=>{const dir=await mkdtemp(tmpdir()+'/talvoryn-'),path=dir+'/state.sqlite';let db=new LocalD1(path);db.sqlite.exec(await readFile('migrations/0001_ingestion.sql','utf8'));const d={through:'2026-11-13',value:17};await write(db,'sample',d);await write(db,'sample',d);assert.equal(db.sqlite.prepare('SELECT COUNT(*) n FROM dataset_versions').get().n,1);await assert.rejects(()=>write(db,'sample',{bad:'x'.repeat(2000000)}));db.close();db=new LocalD1(path);assert.deepEqual(await read(db,'sample'),d);const r=await worker.fetch(new Request('https://example.test/api/admin/refresh',{method:'POST'}),{DB:db});assert.equal(r.status,401);db.close();await rm(dir,{recursive:true})});
 test('reject duplicate, negative and incomplete-day series',()=>{const t=Date.parse('2026-11-13')/1000,now=Date.parse('2026-11-14T12:00Z');assert.deepEqual(dailySeries({totalDataChart:[[t,7],[t+86400,999]]},now),{'2026-11-13':7});assert.throws(()=>dailySeries({totalDataChart:[[t,7],[t,7]]},now));assert.throws(()=>dailySeries({totalDataChart:[[t,-1]]},now))});
 test('missing current supply is not copied forward and revised days replace rather than add',()=>{const base={meta:{through:'2026-11-12',retrievedAt:'old'},daily:[{date:'2026-11-12',buy:1}],months:[{month:'2026-11',through:'2026-11-12',mint:999,burn:1}]};const activity=Object.fromEntries(['volume','fees','revenue'].map(k=>[k,{through:'2026-11-13',daily:{'2026-11-12':5,'2026-11-13':7}}]));const result=assemble(base,activity,{},null);assert.equal(result.months.at(-1).mint,null);assert.equal(result.months.at(-1).burn,null);assert.equal(result.daily.find(r=>r.date==='2026-11-12').volume,5);assert.equal(result.daily.find(r=>r.date==='2026-11-13').buy,null)});
+test('incomplete supply does not erase verified October totals',()=>{
+ const days=Array.from({length:31},(_,i)=>'2026-10-'+String(i+1).padStart(2,'0'));
+ const daily=days.map(date=>({date,volume:10,fees:2,revenue:1,mint:3,burn:null}));
+ const base={meta:{through:'2026-10-31',definitions:{}},daily,months:[{month:'2026-10',through:'2026-10-31',mint:93,burn:31}]};
+ const activity=Object.fromEntries(['volume','fees','revenue'].map(k=>[k,{through:'2026-10-31',daily:Object.fromEntries(daily.map(r=>[r.date,r[k]]))}]));
+ const supply={daily:days.map(date=>({date,mint:3,burn:null}))};
+ const result=assemble(base,activity,{},null,supply);
+ const october=result.months.find(r=>r.month==='2026-10');
+ assert.equal(october.mint,93);
+ assert.equal(october.burn,31);
+ assert.equal(october.coverage.burn,0);
+ assert.equal(result.daily.find(r=>r.date==='2026-10-01').burn,null);
+ const lost={...base,months:[{month:'2026-10',through:'2026-10-31',mint:null,burn:null}]};
+ const history={months:[{month:'2026-10',from:'2026-10-01',toExclusive:'2026-11-01',mint:93,burn:31}]};
+ const repaired=assemble(lost,activity,{},null,supply,history);
+ assert.equal(repaired.months.find(r=>r.month==='2026-10').burn,31);
+ assert.equal(repaired.months.find(r=>r.month==='2026-10').mint,93);
+});
